@@ -7,9 +7,15 @@ const {
 } = require("../utils/generateToken");
 
 
-exports.register = async (req, res) => {
+exports.registerCustomer = async (req, res) => {
     try{
     const {name,email,password} = req.body;
+
+        if (!name || !email || !password) {
+            return res.status(400).json({
+                message: "Name, Email, and Password are required"
+            });
+        }
     const userExist = await User.findOne({email});
     if(userExist){
        return res.status(400).json({
@@ -22,27 +28,33 @@ exports.register = async (req, res) => {
     const user = await User.create({
         name,
         email,
-        password:hashedPassword
+        password:hashedPassword,
+        role: "customer"
     })
     res.status(201).json({
-        message:"User Register Successfully",
-        user
+        message:"Customer Registered Successfully",
+        user: {
+                id: user._id,
+                name: user.name,
+                email: user.email,
+                role: user.role
+            }
     }) 
     }catch(err){
         res.status(500).json({ error:err.message})
     }
 }
 
-exports.login = async (req, res) => {
+exports.loginCustomer = async (req, res) => {
     try{
     const {email,password} = req.body;
 
     const user = await User.findOne({email});
-    if(!user){
-        return res.status(400).json({
-            message: "Invalid User and Password"
-        })
-    }
+            if (!user || user.role !== "customer") {
+            return res.status(400).json({
+                message: "Invalid Email or Password"
+            });
+        }
     const isMatch = await bcrypt.compare(password,user.password);
     if(!isMatch){
         return res.status(400).json({
@@ -52,15 +64,19 @@ exports.login = async (req, res) => {
 
     const refreshToken = generateRefreshToken(user._id);
     const accessToken = generateAccessToken(user._id);
-
-    res.json({
-        message:"User Successfully Login",
-        accessToken,
-        refreshToken,
-        user
-    })
     user.refreshToken = refreshToken;
     await user.save();
+    res.json({
+        message:"Customer Login Successfully",
+        accessToken,
+        refreshToken,
+        user:{
+            id: user._id,
+            name: user.name,
+            email: user.email,
+            role: user.role
+        }
+    })
     }
     catch(err){
         res.status(500).json({error:err.message})

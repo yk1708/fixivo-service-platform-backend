@@ -7,8 +7,13 @@ const UserSchema = mongoose.Schema({
         unique:true    
     },
     password: String,
+    role:{
+        type:String,
+        enum:["customer", "professional"],
+        required:true
+    },
     refreshToken:String
 },
-{timestamp:true});
+{timestamps:true});
 
 module.exports = mongoose.model("User",UserSchema);
