@@ -90,7 +90,11 @@ exports.loginProvider = async (req, res) => {
 
         // Get provider details
         const provider = await Provider.findOne({ userId: user._id });
-
+        if(!provider){
+            return res.status(404).json({
+                message: "Provider Profile Not Found"
+            });
+        }
         // Generate tokens
         const refreshToken = generateRefreshToken(user._id);
         const accessToken = generateAccessToken(user._id);
@@ -118,3 +122,46 @@ exports.loginProvider = async (req, res) => {
         res.status(500).json({ error: err.message });
     }
 };
+
+exports.completeProfile = async (req,res) => {
+    console.log("BODY:", req.body);
+console.log("FILES:", req.files);
+console.log("USER:", req.user);
+    try{
+    const { experience, availability } = req.body;
+
+    const provider = await Provider.findOne({userId: req.user.id});
+    if(!provider){
+        return res.status(404).json({ message: "Provider Not Found"});
+    }
+
+    // Check through the condition all feild completed or not
+    if(req.body.experience) provider.experience = experience;
+    if(req.body.availability) provider.availability = availability;
+    if(req.file?.certificate){
+         provider.certificate = req.files.certificate[0].location;
+    }
+    if(req.file?.profileImage){
+         provider.profileImage = req.files.profileImage[0].location;
+    }
+    
+     // Verification condition
+     if(
+        provider.certificate &&
+        provider.profileImage &&
+        provider.experience &&
+        provider.availability
+     ){
+        provider.isVerified = true;
+     }
+     await provider.save();
+
+    res.json({
+        message: "Profile Updated Successfully",
+        isVerified: provider.isVerified,
+        provider
+    })
+}catch(err){
+    res.status(500).json({ message: "Internal Server Error"});
+}
+}

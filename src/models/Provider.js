@@ -17,22 +17,21 @@ const ProviderSchema = mongoose.Schema(
             type: String,
             required: true
         },
-        experience: Number,  
+        certificate: String,
+        experience: Number, 
+        profileImage: String, 
         rating: {
             type: Number,
             default: 0
         },
         location: {
             type: { type: String, default: "Point" },
-            coordinates: [Number],
+            coordinates: { type: [Number], default: [0, 0] },
         },
-        availability: {
-            type: Boolean,
-            default: true
-        },
+        availability: String,
         isVerified: {
             type: Boolean,
-            default: false  // Admin verification
+            default: false  
         }
     },
     { timestamps: true }

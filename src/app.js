@@ -4,6 +4,7 @@ const app = express();
 
 const auth = require("./routes/auth");
 const customerRoutes = require("./routes/customer");
+const providerRoutes = require("./routes/provider")
 const errorMiddleware = require("./middleware/errorMiddleware");
 //Middleware
 app.use(express.json())
@@ -17,6 +18,7 @@ app.get("/",(req,res) => {
 })
 app.use("/auth",auth);
 app.use("/api/customer",customerRoutes);
+app.use("/api/provider",providerRoutes);
 
 
 app.use(errorMiddleware);
