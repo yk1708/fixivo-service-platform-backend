@@ -15,9 +15,10 @@ const {
 router.post("/customer/register", registerCustomer);
 router.post("/customer/login", loginCustomer);
 
-// Professional/Provider Routes
-router.post("/professional/register", registerProvider);
-router.post("/professional/login", loginProvider);
+router.post("/provider/register", registerProvider);
+router.post("/provider/login", loginProvider);
+
+
 
 router.post("/refresh-token", async (req,res) => {
     const {refreshToken} = req.body;

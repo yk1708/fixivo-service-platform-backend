@@ -3,6 +3,7 @@ const cors = require("cors");
 const app = express();
 
 const auth = require("./routes/auth");
+const customerRoutes = require("./routes/customer");
 const errorMiddleware = require("./middleware/errorMiddleware");
 //Middleware
 app.use(express.json())
@@ -14,8 +15,9 @@ app.use(cors({
 app.get("/",(req,res) => {
     res.send("Its Working")
 })
-
 app.use("/auth",auth);
+app.use("/api/customer",customerRoutes);
+
 
 app.use(errorMiddleware);
 module.exports = app;

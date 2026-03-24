@@ -6,7 +6,7 @@ const {
   generateRefreshToken
 } = require("../utils/generateToken");
 
-// Professional/Provider Registration
+// Provider Registration
 exports.registerProvider = async (req, res) => {
     try {
         const { name, email, password, phone, serviceType, location } = req.body;
@@ -35,7 +35,7 @@ exports.registerProvider = async (req, res) => {
             name,
             email,
             password: hashedPassword,
-            role: "professional"
+            role: "Provider"
         });
 
         // Create Provider document
@@ -49,7 +49,7 @@ exports.registerProvider = async (req, res) => {
         });
 
         res.status(201).json({
-            message: "Professional Registered Successfully",
+            message: "Provider Registered Successfully",
             user: {
                 id: user._id,
                 name: user.name,
@@ -67,14 +67,14 @@ exports.registerProvider = async (req, res) => {
     }
 };
 
-// Professional/Provider Login
+// Provider Login
 exports.loginProvider = async (req, res) => {
     try {
         const { email, password } = req.body;
 
-        // Check if user exists and role is professional
+        // Check if user exists and role is Provider
         const user = await User.findOne({ email });
-        if (!user || user.role !== "professional") {
+        if (!user || user.role !== "Provider") {
             return res.status(400).json({
                 message: "Invalid Email or Password"
             });
@@ -99,7 +99,7 @@ exports.loginProvider = async (req, res) => {
         await user.save();
 
         res.json({
-            message: "Professional Login Successfully",
+            message: "Provider Login Successfully",
             accessToken,
             refreshToken,
             user: {

@@ -9,7 +9,7 @@ const UserSchema = mongoose.Schema({
     password: String,
     role:{
         type:String,
-        enum:["customer", "professional"],
+        enum:["customer", "Provider"],
         required:true
     },
     refreshToken:String
