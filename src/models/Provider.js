@@ -17,9 +17,7 @@ const ProviderSchema = mongoose.Schema(
             type: String,
             required: true
         },
-        certificate: String,
         experience: Number, 
-        profileImage: String, 
         rating: {
             type: Number,
             default: 0

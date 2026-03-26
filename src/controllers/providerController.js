@@ -124,9 +124,6 @@ exports.loginProvider = async (req, res) => {
 };
 
 exports.completeProfile = async (req,res) => {
-    console.log("BODY:", req.body);
-console.log("FILES:", req.files);
-console.log("USER:", req.user);
     try{
     const { experience, availability } = req.body;
 
@@ -135,26 +132,16 @@ console.log("USER:", req.user);
         return res.status(404).json({ message: "Provider Not Found"});
     }
 
-    // Check through the condition all feild completed or not
+    // Update provider profile
     if(req.body.experience) provider.experience = experience;
     if(req.body.availability) provider.availability = availability;
-    if(req.file?.certificate){
-         provider.certificate = req.files.certificate[0].location;
-    }
-    if(req.file?.profileImage){
-         provider.profileImage = req.files.profileImage[0].location;
+    
+    // Verification condition - verified when experience and availability are provided
+    if(provider.experience && provider.availability){
+        provider.isVerified = true;
     }
     
-     // Verification condition
-     if(
-        provider.certificate &&
-        provider.profileImage &&
-        provider.experience &&
-        provider.availability
-     ){
-        provider.isVerified = true;
-     }
-     await provider.save();
+    await provider.save();
 
     res.json({
         message: "Profile Updated Successfully",
@@ -162,6 +149,7 @@ console.log("USER:", req.user);
         provider
     })
 }catch(err){
-    res.status(500).json({ message: "Internal Server Error"});
+    console.error("Complete Profile Error:", err);
+    res.status(500).json({ message: "Internal Server Error", error: err.message });
 }
 }
