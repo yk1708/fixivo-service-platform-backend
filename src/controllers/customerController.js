@@ -1,4 +1,3 @@
-
 const Provider = require('../models/Provider');
 
 exports.getVerifiedProviders = async (req, res) => {
@@ -15,3 +14,4 @@ exports.getVerifiedProviders = async (req, res) => {
         res.status(500).json({ message: "Internal Server Error" });
     }
 };
+

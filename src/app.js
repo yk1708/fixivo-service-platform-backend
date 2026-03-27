@@ -19,6 +19,7 @@ app.get("/",(req,res) => {
 app.use("/auth",auth);
 app.use("/api/customer",customerRoutes);
 app.use("/api/provider",providerRoutes);
+app.use("/api/request",require("./routes/request"));
 
 
 app.use(errorMiddleware);

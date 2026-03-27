@@ -1,30 +1,33 @@
 const mongoose = require("mongoose");
+const Provider = require("./Provider");
 
 const serviceRequestSchema = new mongoose.Schema(
     {
+        providerId : {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: "Provider",
+            required: true
+        },
         customerId:{
             type:mongoose.Schema.Types.ObjectId,
-            ref: 'User',
-            require: true
+            ref:"User",
+            required:true
         },
-        providerId:{
-            type:mongoose.Schema.Types.ObjectId,
-            ref:'Provider',
-            require:true
-        },
-        service:{
+        serviceType:{
             type:String,
-            require:true
+            required:true
         },
-        time:{
-            type:Date,
-            require:trusted
+        details:{
+            type:String,
+            required:true
         },
+        scheduledTime: Date,
         status:{
-           type:String,
-           default:'pending' 
+            type:String,
+            enum:["pending","accepted","rejected"],
+            default:"pending"
         }
     }
 )
 
-module.exports = mongoose.model('serviceRequest',serviceRequestSchema)
+module.exports = mongoose.model("ServiceRequest", serviceRequestSchema);
