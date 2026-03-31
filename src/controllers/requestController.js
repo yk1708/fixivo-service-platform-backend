@@ -69,3 +69,46 @@ exports.getCustomerRequests = async (req,res) => {
     }
 }
 
+exports.acceptRequest = async (req,res) => {
+    try{
+        const requestId = req.params.id;
+        if(!requestId){
+            return res.status(400).json({ messsage: "Request ID is required" });
+        }
+
+        const request =  await ServiceRequest.findById(requestId);
+        if(!request){
+            return res.status(404).json({ message: "Request Not Found" });
+        }
+
+        if(request.status !== "pending"){
+            return res.status(400).json({ message: "Request is not pending" });
+        }
+        request.status = "accepted";
+        await request.save();
+        res.json({ message: "Request accepted successfully", request });
+    }catch(err){
+        res.status(500).json({ message: "Internal Server Error", error: err.message });
+    }
+}
+
+exports.rejectRequest = async (req,res) => {
+    try{
+        const requestId = req.params.id;
+        if(!requestId){
+            return res.status(400).json({ messsage: "Request ID is required" });
+        }
+        const request =  await ServiceRequest.findById(requestId);
+        if(!request){
+            return res.status(404).json({ message: "Request Not Found" });
+        }  
+        if(request.status !== "pending"){
+            return res.status(400).json({ message: "Request is not pending" });
+        }
+        request.status = "rejected";
+        await request.save();
+        res.json({ message: "Request rejected successfully", request });
+    }catch(err){
+        res.status(500).json({ message: "Internal Server Error", error: err.message });
+    }
+} 

@@ -26,6 +26,13 @@ const serviceRequestSchema = new mongoose.Schema(
             type:String,
             enum:["pending","accepted","rejected"],
             default:"pending"
+        },
+        acceptedAt:{
+            type:Date
+        },
+        isAccepted:{
+            type:Boolean,
+            default:false
         }
     }
 )
