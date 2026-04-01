@@ -24,7 +24,7 @@ const serviceRequestSchema = new mongoose.Schema(
         scheduledTime: Date,
         status:{
             type:String,
-            enum:["pending","accepted","rejected"],
+            enum:["pending","accepted","rejected","completed"],
             default:"pending"
         },
         acceptedAt:{
@@ -33,6 +33,18 @@ const serviceRequestSchema = new mongoose.Schema(
         isAccepted:{
             type:Boolean,
             default:false
+        },
+        otp:{
+            type:String,
+            default:null
+        },
+        otpExpires:{
+            type:Date,
+            default:null
+        },
+        completedAt:{
+            type:Date,
+            default:null
         }
     }
 )

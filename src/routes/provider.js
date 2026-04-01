@@ -4,5 +4,7 @@ const authMiddleware = require("../middleware/authMiddleware")
 const providerController = require("../controllers/providerController");
 
 router.put("/complete-profile",authMiddleware.verifyToken, providerController.completeProfile);
+router.put("/complete-work/:requestId",authMiddleware.verifyToken, providerController.completeWork);
+router.post("/verify-otp/:requestId", authMiddleware.verifyToken, providerController.verifyOtpAndComplete);
 
 module.exports = router;
