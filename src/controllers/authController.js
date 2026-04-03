@@ -62,8 +62,8 @@ exports.loginCustomer = async (req, res) => {
         })
     }
 
-    const refreshToken = generateRefreshToken(user._id);
-    const accessToken = generateAccessToken(user._id);
+const refreshToken = generateRefreshToken(user);
+const accessToken = generateAccessToken(user);
     user.refreshToken = refreshToken;
     await user.save();
     res.json({
