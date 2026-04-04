@@ -44,10 +44,7 @@ exports.recommendationService = async (req, res) => {
                 $match: {
                     // Handle serviceType as array or string
                     $expr: {
-                        $or: [
-                            { $eq: ["$serviceType", serviceType] },
-                            { $in: [serviceType, { $ifNull: ["$serviceType", []] }] }
-                        ]
+                        $eq: ["$serviceType", serviceType]
                     },
                     isAvailable: true
                 }

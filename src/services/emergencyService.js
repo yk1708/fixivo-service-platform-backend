@@ -76,7 +76,8 @@ exports.emergencyService = async (req,res) => {
             data: {
                 emergencyId: newEmergency._id,
                 nearbyProviders: providers.length
-            }
+            },
+            status: 201
         });
     }catch(err){
         console.error("Emergency API Error:", err);
