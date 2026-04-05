@@ -12,6 +12,7 @@ const crypto = require("crypto");
 
 // Provider Registration
 exports.registerProvider = async (req, res) => {
+    console.log("Register Provider API called");
     try {
         const { name, email, password, phone, serviceType, location } = req.body;
 
@@ -22,8 +23,11 @@ exports.registerProvider = async (req, res) => {
             });
         }
 
+        // Normalize email
+        const normalizedEmail = email.toLowerCase().trim();
+
         // Check if user already exists
-        const userExist = await User.findOne({ email });
+        const userExist = await User.findOne({ email: normalizedEmail });
         if (userExist) {
             return res.status(400).json({
                 message: "User Already Exists. Please Try With Another Email"
@@ -37,7 +41,7 @@ exports.registerProvider = async (req, res) => {
         // Create User document
         const user = await User.create({
             name,
-            email,
+            email: normalizedEmail,
             password: hashedPassword,
             role: "Provider"
         });
@@ -46,7 +50,7 @@ exports.registerProvider = async (req, res) => {
         const provider = await Provider.create({
             userId: user._id,
             name,
-            email,
+            email: normalizedEmail,
             phone: phone || "",
             serviceType,
             location: location || { type: "Point", coordinates: [0, 0] }
@@ -76,8 +80,11 @@ exports.loginProvider = async (req, res) => {
     try {
         const { email, password } = req.body;
 
+        // Normalize email
+        const normalizedEmail = email.toLowerCase().trim();
+
         // Check if user exists and role is Provider
-        const user = await User.findOne({ email });
+        const user = await User.findOne({ email: normalizedEmail });
         if (!user || user.role !== "Provider") {
             return res.status(400).json({
                 message: "Invalid Email or Password"
@@ -100,8 +107,8 @@ exports.loginProvider = async (req, res) => {
             });
         }
         // Generate tokens
-        const refreshToken = generateRefreshToken(user._id);
-        const accessToken = generateAccessToken(user._id);
+        const refreshToken = generateRefreshToken(user);
+        const accessToken = generateAccessToken(user);
         
         user.refreshToken = refreshToken;
         await user.save();

@@ -16,7 +16,8 @@ exports.registerCustomer = async (req, res) => {
                 message: "Name, Email, and Password are required"
             });
         }
-    const userExist = await User.findOne({email});
+    const normalizedEmail = email.toLowerCase().trim();
+    const userExist = await User.findOne({email: normalizedEmail});
     if(userExist){
        return res.status(400).json({
             message:"User Already Exist. Please Try With Another Email"
@@ -27,7 +28,7 @@ exports.registerCustomer = async (req, res) => {
 
     const user = await User.create({
         name,
-        email,
+        email: normalizedEmail,
         password:hashedPassword,
         role: "customer"
     })
@@ -49,7 +50,8 @@ exports.loginCustomer = async (req, res) => {
     try{
     const {email,password} = req.body;
 
-    const user = await User.findOne({email});
+    const normalizedEmail = email.toLowerCase().trim();
+    const user = await User.findOne({email: normalizedEmail});
             if (!user || user.role !== "customer") {
             return res.status(400).json({
                 message: "Invalid Email or Password"
