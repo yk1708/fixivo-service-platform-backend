@@ -19,11 +19,11 @@ const UserSchema = mongoose.Schema({
 {timestamps:true});
 
 // Pre-save hook to ensure email is lowercase
-UserSchema.pre('save', function(next) {
-    if (this.email) {
-        this.email = this.email.toLowerCase().trim();
-    }
-    next();
-});
+// UserSchema.pre('save', function(next) {
+//     if (this.email) {
+//         this.email = this.email.toLowerCase().trim();
+//     }
+//     next();
+// });
 
 module.exports = mongoose.model("User",UserSchema);
