@@ -292,3 +292,50 @@ exports.verifyOtpAndComplete = async (req, res) => {
         });
     }
 };
+
+exports.getMyCompletedRequests  = async (req,res) => {
+    try{
+        const userId = req.user._id || req.user.id;
+        if(!userId){
+            return res.status(401).json({
+                message: "User ID not found in token"
+            });
+        }
+        if(req.user.role !== "Provider"){
+            return res.status(403).json({
+                message: "Access Denied. Only Providers can access this API"
+            });
+        }
+
+        const page = parseInt(req.query.page) || 1;
+        const limit = parseInt(req.query.limit) || 10;
+        const skip = (page - 1) * limit;
+
+        const completedRequests = await ServiceRequest.find({
+            providerId: userId,
+            status: "completed"
+        }) .populate("customerId", "name") // minimal info
+        .sort({ updatedAt: -1 })
+        .skip(skip)
+        .limit(limit)
+        .select("-otp -otpExpires")
+        .lean();
+
+        const totalCompleted = await ServiceRequest.countDocuments({
+            providerId: userId,
+            status: "completed"
+        });
+
+        return res.status(200).json({
+            success: true,
+            totalCompleted,
+            page,
+            limit,
+            data: completedRequests
+        });
+
+    }catch(err){
+        console.error("Provider Completed Requests Error:", err);
+        res.status(500).json({ success: false,message: "Internal Server Errror", error: err.message });
+    }
+}
