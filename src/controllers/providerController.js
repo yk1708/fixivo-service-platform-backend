@@ -10,11 +10,10 @@ const generateOTP = require("../utils/generateOTP");
 const crypto = require("crypto");
 
 
-// Provider Registration
 exports.registerProvider = async (req, res) => {
     console.log("Register Provider API called");
     try {
-        const { name, email, password, phone, serviceType, location } = req.body;
+        const { name, email, password, phone, serviceType } = req.body;
 
         // Validation
         if (!name || !email || !password || !serviceType) {
@@ -53,7 +52,7 @@ exports.registerProvider = async (req, res) => {
             email: normalizedEmail,
             phone: phone || "",
             serviceType,
-            location: location || { type: "Point", coordinates: [0, 0] }
+            
         });
 
         res.status(201).json({
@@ -71,11 +70,14 @@ exports.registerProvider = async (req, res) => {
             }
         });
     } catch (err) {
-        res.status(500).json({ error: err.message });
+        console.error("Provider Registration Error:", err);
+        res.status(500).json({ 
+            error: err.message,
+            details: process.env.NODE_ENV === 'development' ? err.stack : undefined
+        });
     }
 };
 
-// Provider Login
 exports.loginProvider = async (req, res) => {
     try {
         const { email, password } = req.body;
@@ -130,15 +132,21 @@ exports.loginProvider = async (req, res) => {
             }
         });
     } catch (err) {
-        res.status(500).json({ error: err.message });
+        console.error("Provider Login Error:", err);
+        res.status(500).json({ 
+            error: err.message,
+            details: process.env.NODE_ENV === 'development' ? err.stack : undefined
+        });
     }
 };
 
 exports.completeProfile = async (req,res) => {
     try{
-    const { experience, availability } = req.body;
+    const { experience, availability,latitude, longitude } = req.body;
 
-    const provider = await Provider.findOne({userId: req.user.id});
+    const userId = req.user._id || req.user.id;
+
+    const provider = await Provider.findOne({ userId     }).populate('userId', 'name email');
     if(!provider){
         return res.status(404).json({ message: "Provider Not Found"});
     }
@@ -146,9 +154,15 @@ exports.completeProfile = async (req,res) => {
     // Update provider profile
     if(req.body.experience) provider.experience = experience;
     if(req.body.availability) provider.availability = availability;
+    if (latitude && longitude) {
+      provider.location = {
+        type: "Point",
+        coordinates: [longitude, latitude] 
+      };
+    }
     
     // Verification condition - verified when experience and availability are provided
-    if(provider.experience && provider.availability){
+    if(provider.experience && provider.availability && provider.location?.coordinates?.length === 2){
         provider.isVerified = true;
     }
     
@@ -159,11 +173,13 @@ exports.completeProfile = async (req,res) => {
         isVerified: provider.isVerified,
         provider
     })
+    console.log("Complete Profile Success:", provider);
 }catch(err){
     console.error("Complete Profile Error:", err);
     res.status(500).json({ message: "Internal Server Error", error: err.message });
 }
 }
+
 exports.completeWork = async (req, res) => {
     try {
         const { requestId } = req.params;

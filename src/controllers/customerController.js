@@ -5,7 +5,6 @@ exports.getVerifiedProviders = async (req, res) => {
         const providers = await Provider.find({ isVerified: true })
             .populate({
                 path: "userId",
-                match: { role: "provider" },
                 select: "email name role"
             });
         const filteredProviders = providers.filter(p => p.userId);

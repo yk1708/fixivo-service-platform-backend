@@ -23,8 +23,8 @@ const ProviderSchema = mongoose.Schema(
             default: 0
         },
         location: {
-           type: { type: String, enum: ['Point'], required: true },
-           coordinates: { type: [Number], required: true }
+           type: { type: String, enum: ['Point'], default: 'Point' },
+           coordinates: { type: [Number], default: [0, 0] }
         },
         availability: String,
         isVerified: {
