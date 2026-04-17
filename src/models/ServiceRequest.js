@@ -30,10 +30,6 @@ const serviceRequestSchema = new mongoose.Schema(
         acceptedAt:{
             type:Date
         },
-        isAccepted:{
-            type:Boolean,
-            default:false
-        },
         otp:{
             type:String,
             default:null

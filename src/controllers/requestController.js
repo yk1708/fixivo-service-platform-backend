@@ -69,6 +69,36 @@ exports.getCustomerRequests = async (req,res) => {
     }
 }
 
+exports.getCustomerRequestsStatus = async (req, res) => {
+    try {
+        const customerId = req.user._id || req.user.id;
+
+        console.log("User from token:", req.user);
+
+        if (!customerId) {
+            return res.status(401).json({
+                message: "User ID not found in token"
+            });
+        }
+
+        const requests = await ServiceRequest.find({ customerId })
+            .populate("providerId", "name serviceType phone email")
+            .sort({ updatedAt: -1 });
+
+        res.status(200).json({
+            customerId,
+            totalRequests: requests.length,
+            requests
+        });
+
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({
+            message: "Server Error"
+        });
+    }
+};
+
 exports.acceptRequest = async (req,res) => {
     try{
         const requestId = req.params.id;
@@ -85,6 +115,7 @@ exports.acceptRequest = async (req,res) => {
             return res.status(400).json({ message: "Request is not pending" });
         }
         request.status = "accepted";
+        request.acceptedAt = new Date();
         await request.save();
         res.json({ message: "Request accepted successfully", request });
     }catch(err){
@@ -112,5 +143,6 @@ exports.rejectRequest = async (req,res) => {
         res.status(500).json({ message: "Internal Server Error", error: err.message });
     }
 } 
+
 
 
