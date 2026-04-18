@@ -30,6 +30,10 @@ const ProviderSchema = mongoose.Schema(
         isVerified: {
             type: Boolean,
             default: false  
+        },
+        isAvailable: {
+            type: Boolean,
+            default: true
         }
     },
     { timestamps: true }

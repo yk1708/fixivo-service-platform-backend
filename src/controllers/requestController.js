@@ -86,14 +86,24 @@ exports.getCustomerRequests = async (req, res) => {
 
 exports.seeRequestsInsideProviderDashboard = async (req, res) => {
   try {
-    const providerId = req.user._id;
-    console.log("User from token:", req.user);
-    if (!providerId) {
+    const userId = req.user._id;
+    
+    if (!userId) {
       return res.status(401).json({ message: "User ID not found in token" });
     }
-    const requests = await ServiceRequest.find({ providerId })
+
+    // Since providerId in ServiceRequest refers to the Provider collection _id,
+    // we must first find the Provider document associated with this user
+    const provider = await Provider.findOne({ userId });
+    
+    if (!provider) {
+      return res.status(404).json({ message: "Provider profile not found" });
+    }
+
+    const requests = await ServiceRequest.find({ providerId: provider._id })
       .populate("customerId", "name email")
       .sort({ createdAt: -1 });
+
     res.json({ requests });
   } catch (err) {
     console.error("Error in seeRequestsInsideProviderDashboard:", err);
@@ -145,7 +155,7 @@ exports.acceptRequest = async (req, res) => {
     }
     const provider = await Provider.findOne({ userId: req.user._id });
     if (!provider || request.providerId.toString() !== provider._id.toString()) {
-        return res.status(403).json({ message: "Unauthorized" });
+      return res.status(403).json({ message: "Unauthorized" });
     }
     if (request.status !== "pending") {
       return res.status(400).json({ message: "Request is not pending" });
@@ -173,7 +183,7 @@ exports.rejectRequest = async (req, res) => {
     }
     const provider = await Provider.findOne({ userId: req.user._id });
     if (!provider || request.providerId.toString() !== provider._id.toString()) {
-        return res.status(403).json({ message: "Unauthorized" });
+      return res.status(403).json({ message: "Unauthorized" });
     }
     if (request.status !== "pending") {
       return res.status(400).json({ message: "Request is not pending" });

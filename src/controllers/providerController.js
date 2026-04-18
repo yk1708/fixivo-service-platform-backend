@@ -190,6 +190,11 @@ exports.completeWork = async (req, res) => {
             return res.status(404).json({ message: "Request Not Found" });
         }
 
+        const provider = await Provider.findOne({ userId: req.user._id });
+        if (!provider || request.providerId.toString() !== provider._id.toString()) {
+            return res.status(403).json({ message: "Unauthorized: This request does not belong to you" });
+        }
+
         if (request.status.toLowerCase() !== "accepted") {
             return res.status(400).json({ message: "Request not accepted" });
         }
@@ -251,7 +256,11 @@ exports.verifyOtpAndComplete = async (req, res) => {
             });
         }
 
-        // Check if request is completed
+        const provider = await Provider.findOne({ userId: req.user._id });
+        if (!provider || request.providerId.toString() !== provider._id.toString()) {
+            return res.status(403).json({ message: "Unauthorized: This request does not belong to you" });
+        }
+
         if (request.status.toLowerCase() === "completed") {
             return res.status(400).json({
                 message: "Request already completed"
@@ -327,10 +336,17 @@ exports.getMyCompletedRequests  = async (req,res) => {
         const limit = parseInt(req.query.limit) || 10;
         const skip = (page - 1) * limit;
 
+        const provider = await Provider.findOne({ userId });
+        if (!provider) {
+            return res.status(404).json({
+                message: "Provider profile not found"
+            });
+        }
+
         const completedRequests = await ServiceRequest.find({
-            providerId: userId,
+            providerId: provider._id,
             status: "completed"
-        }) .populate("customerId", "name") // minimal info
+        }) .populate("customerId", "name") 
         .sort({ updatedAt: -1 })
         .skip(skip)
         .limit(limit)
@@ -338,7 +354,7 @@ exports.getMyCompletedRequests  = async (req,res) => {
         .lean();
 
         const totalCompleted = await ServiceRequest.countDocuments({
-            providerId: userId,
+            providerId: provider._id,
             status: "completed"
         });
 
