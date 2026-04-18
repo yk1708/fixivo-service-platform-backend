@@ -5,7 +5,7 @@ const Notification = require("../models/Notification");
 exports.emergencyService = async (req,res) => {
     try{
         const { location, description, serviceType } = req.body;
-        const customerId = req.user._id || req.user.id;
+        const customerId = req.user._id;
         if(!customerId) {
             return res.status(401).json({
                 success: false,

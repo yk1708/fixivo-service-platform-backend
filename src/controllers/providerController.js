@@ -42,7 +42,7 @@ exports.registerProvider = async (req, res) => {
             name,
             email: normalizedEmail,
             password: hashedPassword,
-            role: "Provider"
+            role: "provider"
         });
 
         // Create Provider document
@@ -87,7 +87,7 @@ exports.loginProvider = async (req, res) => {
 
         // Check if user exists and role is Provider
         const user = await User.findOne({ email: normalizedEmail });
-        if (!user || user.role !== "Provider") {
+        if (!user || user.role !== "provider") {
             return res.status(400).json({
                 message: "Invalid Email or Password"
             });
@@ -144,7 +144,7 @@ exports.completeProfile = async (req,res) => {
     try{
     const { experience, availability,latitude, longitude } = req.body;
 
-    const userId = req.user._id || req.user.id;
+    const userId = req.user._id;
 
     const provider = await Provider.findOne({ userId     }).populate('userId', 'name email');
     if(!provider){
@@ -311,13 +311,13 @@ exports.verifyOtpAndComplete = async (req, res) => {
 
 exports.getMyCompletedRequests  = async (req,res) => {
     try{
-        const userId = req.user._id || req.user.id;
+        const userId = req.user._id;
         if(!userId){
             return res.status(401).json({
                 message: "User ID not found in token"
             });
         }
-        if(req.user.role !== "Provider"){
+        if(req.user.role !== "provider"){
             return res.status(403).json({
                 message: "Access Denied. Only Providers can access this API"
             });

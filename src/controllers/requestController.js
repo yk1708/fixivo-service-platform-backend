@@ -7,7 +7,7 @@ exports.sendRequestToProvider = async (req, res) => {
     const { providerId, requestDetails } = req.body;
 
     console.log("User from token:", req.user);
-    const customerId = req.user._id || req.user.id;
+    const customerId = req.user._id;
 
     if (!customerId) {
       return res.status(401).json({ message: "User ID not found in token" });
@@ -67,7 +67,7 @@ exports.sendRequestToProvider = async (req, res) => {
 
 exports.getCustomerRequests = async (req, res) => {
   try {
-    const customerId = req.user._id || req.user.id;
+    const customerId = req.user._id;
     console.log("User from token:", req.user);
     if (!customerId) {
       return res.status(401).json({ message: "User ID not found in token" });
@@ -84,9 +84,28 @@ exports.getCustomerRequests = async (req, res) => {
   }
 };
 
+exports.seeRequestsInsideProviderDashboard = async (req, res) => {
+  try {
+    const providerId = req.user._id;
+    console.log("User from token:", req.user);
+    if (!providerId) {
+      return res.status(401).json({ message: "User ID not found in token" });
+    }
+    const requests = await ServiceRequest.find({ providerId })
+      .populate("customerId", "name email")
+      .sort({ createdAt: -1 });
+    res.json({ requests });
+  } catch (err) {
+    console.error("Error in seeRequestsInsideProviderDashboard:", err);
+    res
+      .status(500)
+      .json({ message: "Internal Server Error", error: err.message });
+  }
+};
+
 exports.getCustomerRequestsStatus = async (req, res) => {
   try {
-    const customerId = req.user._id || req.user.id;
+    const customerId = req.user._id;
 
     console.log("User from token:", req.user);
 
@@ -117,14 +136,17 @@ exports.acceptRequest = async (req, res) => {
   try {
     const requestId = req.params.id;
     if (!requestId) {
-      return res.status(400).json({ messsage: "Request ID is required" });
+      return res.status(400).json({ message: "Request ID is required" });
     }
 
     const request = await ServiceRequest.findById(requestId);
     if (!request) {
       return res.status(404).json({ message: "Request Not Found" });
     }
-
+    const provider = await Provider.findOne({ userId: req.user._id });
+    if (!provider || request.providerId.toString() !== provider._id.toString()) {
+        return res.status(403).json({ message: "Unauthorized" });
+    }
     if (request.status !== "pending") {
       return res.status(400).json({ message: "Request is not pending" });
     }
@@ -143,11 +165,15 @@ exports.rejectRequest = async (req, res) => {
   try {
     const requestId = req.params.id;
     if (!requestId) {
-      return res.status(400).json({ messsage: "Request ID is required" });
+      return res.status(400).json({ message: "Request ID is required" });
     }
     const request = await ServiceRequest.findById(requestId);
     if (!request) {
       return res.status(404).json({ message: "Request Not Found" });
+    }
+    const provider = await Provider.findOne({ userId: req.user._id });
+    if (!provider || request.providerId.toString() !== provider._id.toString()) {
+        return res.status(403).json({ message: "Unauthorized" });
     }
     if (request.status !== "pending") {
       return res.status(400).json({ message: "Request is not pending" });

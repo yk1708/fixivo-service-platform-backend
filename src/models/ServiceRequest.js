@@ -42,7 +42,7 @@ const serviceRequestSchema = new mongoose.Schema(
             type:Date,
             default:null
         }
-    }
+    }, { timestamps: true }
 )
 
 module.exports = mongoose.model("ServiceRequest", serviceRequestSchema);

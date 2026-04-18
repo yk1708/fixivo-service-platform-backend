@@ -71,7 +71,7 @@ router.post("/refresh-token", async (req,res) => {
 })
 
 router.post("/logout",verifyToken,async(req,res) => {
-    const userId = req.user.id;
+    const userId = req.user._id;
     try{
         const user = await User.findById(userId);
         if(!user){
