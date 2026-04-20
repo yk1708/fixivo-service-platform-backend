@@ -6,6 +6,7 @@ const auth = require("./routes/auth");
 const customerRoutes = require("./routes/customer");
 const providerRoutes = require("./routes/provider")
 const errorMiddleware = require("./middleware/errorMiddleware");
+const notificationRoutes = require("./routes/notification");
 //Middleware
 app.use(express.json())
 app.use(cors({
@@ -20,6 +21,7 @@ app.use("/auth", auth);
 app.use("/api/customer", customerRoutes);
 app.use("/api/provider", providerRoutes);
 app.use("/api/request", require("./routes/request"));
+app.use("/api/notification", notificationRoutes);
 
 
 app.use(errorMiddleware);
