@@ -4,7 +4,6 @@ exports.recommendationService = async (req, res) => {
     try {
         const { location, serviceType, page = 1, limit = 10 } = req.body;
 
-        // ✅ Validate location
         if (!location || !location.coordinates || location.coordinates.length !== 2) {
             return res.status(400).json({
                 success: false,
@@ -12,7 +11,6 @@ exports.recommendationService = async (req, res) => {
             });
         }
 
-        // ✅ Validate serviceType
         if (!serviceType) {
             return res.status(400).json({
                 success: false,
@@ -20,14 +18,12 @@ exports.recommendationService = async (req, res) => {
             });
         }
 
-        // ✅ Validate pagination parameters
         const pageNum = Math.max(1, parseInt(page) || 1);
-        const limitNum = Math.max(1, Math.min(100, parseInt(limit) || 10)); // Max 100 to prevent abuse
+        const limitNum = Math.max(1, Math.min(100, parseInt(limit) || 10)); 
         const skip = (pageNum - 1) * limitNum;
 
         const [lng, lat] = location.coordinates;
 
-        // ✅ Find nearby providers with geospatial query
         const providers = await Provider.aggregate([
             {
                 $geoNear: {
@@ -36,17 +32,12 @@ exports.recommendationService = async (req, res) => {
                         coordinates: [lng, lat],
                     },
                     distanceField: "distance",
-                    maxDistance: 10000, // 10 km
+                    maxDistance: 10000, 
                     spherical: true,
-                }
-            },
-            {
-                $match: {
-                    // Handle serviceType as array or string
-                    $expr: {
-                        $eq: ["$serviceType", serviceType]
-                    },
-                    isAvailable: true
+                    query: {
+                        serviceType: serviceType,
+                        isAvailable: true
+                    }
                 }
             },
             {
@@ -68,7 +59,7 @@ exports.recommendationService = async (req, res) => {
             }
         ]);
 
-        // ✅ Get total count for pagination metadata
+        
         const totalCount = await Provider.countDocuments({
             isAvailable: true
         });
@@ -88,11 +79,9 @@ exports.recommendationService = async (req, res) => {
 
     } catch (err) {
         console.error("Error in recommendationService:", err);
-        // ✅ Don't expose internal error details in production
         res.status(500).json({
             success: false,
             message: "Internal Server Error",
-            // Only show error details in development
             ...(process.env.NODE_ENV === 'development' && { error: err.message })
         });
     }
