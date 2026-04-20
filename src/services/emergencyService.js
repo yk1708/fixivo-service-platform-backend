@@ -34,9 +34,14 @@ exports.emergencyService = async (req,res) => {
             serviceType: serviceType,
             status: "pending"
         });
+        await newEmergency.save();
+
+        console.log("Emergency Service Debug:");
+        console.log("Service Type:", serviceType);
+        console.log("Coordinates:", location.coordinates);
 
         const providers = await Provider.find({
-            serviceType,
+            serviceType: serviceType,
             location: {
                 $near: {
                     $geometry: {
@@ -49,6 +54,9 @@ exports.emergencyService = async (req,res) => {
             isAvailable: true
         }).limit(5);
 
+        console.log("Providers found:", providers.length);
+        providers.forEach(p => console.log("Provider:", p._id, "userId:", p.userId, "serviceType:", p.serviceType));
+
         if(providers.length === 0){
             return res.status(200).json({
                 success: true,
@@ -58,16 +66,18 @@ exports.emergencyService = async (req,res) => {
             })
         }
 
-        providers.forEach(provider => {
+        const notificationPromises = providers.map(provider => {
             const notification = new Notification({
                 userId: provider.userId,
                 type: "emergency",
                 message: `New emergency request for ${serviceType} near you.`
             });
-            notification.save();
+            console.log("Creating notification for provider userId:", provider.userId);
+            return notification.save();
         });
 
-        await newEmergency.save();
+        await Promise.all(notificationPromises);
+        console.log("All notifications saved");
 
         res.status(201).json({ 
              success: true,
