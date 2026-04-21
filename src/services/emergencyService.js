@@ -55,6 +55,16 @@ exports.emergencyService = async (req,res) => {
             isAvailable: true
         }).limit(5);
 
+        // Assign providers to emergency
+        if(providers.length > 0) {
+            newEmergency.assignedProviders = providers.map(provider => ({
+                providerId: provider._id,
+                status: "pending"
+            }));
+        }
+
+        await newEmergency.save();
+
         if(providers.length === 0){
             return res.status(200).json({
                 success: true,
@@ -75,7 +85,13 @@ exports.emergencyService = async (req,res) => {
             return notification.save();
         });
 
-        await newEmergency.save();
+        // Emit real-time event to providers
+        const io = require("../app").get("io");
+        if(io) {
+            emitEmergencyToProviders(io, providers, newEmergency);
+        } else {
+            console.error("Socket.IO instance not found in app context");
+        }
 
         res.status(201).json({ 
              success: true,
