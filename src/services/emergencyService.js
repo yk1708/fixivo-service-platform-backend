@@ -35,9 +35,14 @@ exports.emergencyService = async (req,res) => {
             serviceType: serviceType,
             status: "pending"
         });
+        await newEmergency.save();
+
+        console.log("Emergency Service Debug:");
+        console.log("Service Type:", serviceType);
+        console.log("Coordinates:", location.coordinates);
 
         const providers = await Provider.find({
-            serviceType,
+            serviceType: serviceType,
             location: {
                 $near: {
                     $geometry: {
@@ -50,16 +55,6 @@ exports.emergencyService = async (req,res) => {
             isAvailable: true
         }).limit(5);
 
-        // Assign providers to emergency
-        if(providers.length > 0) {
-            newEmergency.assignedProviders = providers.map(provider => ({
-                providerId: provider._id,
-                status: "pending"
-            }));
-        }
-
-        await newEmergency.save();
-
         if(providers.length === 0){
             return res.status(200).json({
                 success: true,
@@ -69,7 +64,6 @@ exports.emergencyService = async (req,res) => {
             })
         }
 
-        // Send notifications with emergency ID
         providers.forEach(provider => {
             const notification = new Notification({
                 userId: provider.userId,
@@ -77,14 +71,11 @@ exports.emergencyService = async (req,res) => {
                 message: `New emergency request for ${serviceType} near you.`,
                 relatedId: newEmergency._id
             });
-            notification.save();
+            console.log("Creating notification for provider userId:", provider.userId);
+            return notification.save();
         });
 
-        // Emit real-time event to providers
-        const io = require("../app").get("io");
-        if(io) {
-            emitEmergencyToProviders(io, providers, newEmergency);
-        }
+        await newEmergency.save();
 
         res.status(201).json({ 
              success: true,
