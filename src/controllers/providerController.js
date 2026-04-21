@@ -371,3 +371,241 @@ exports.getMyCompletedRequests  = async (req,res) => {
         res.status(500).json({ success: false,message: "Internal Server Errror", error: err.message });
     }
 }
+
+// NEW: Get assigned emergency requests for provider
+exports.getAssignedEmergencies = async (req, res) => {
+    try {
+        const userId = req.user._id;
+        
+        if (!userId) {
+            return res.status(401).json({
+                success: false,
+                message: "User ID not found in token"
+            });
+        }
+
+        if (req.user.role !== "provider") {
+            return res.status(403).json({
+                success: false,
+                message: "Access Denied. Only Providers can access this API"
+            });
+        }
+
+        const provider = await Provider.findOne({ userId });
+        if (!provider) {
+            return res.status(404).json({
+                success: false,
+                message: "Provider profile not found"
+            });
+        }
+
+        const page = parseInt(req.query.page) || 1;
+        const limit = parseInt(req.query.limit) || 10;
+        const skip = (page - 1) * limit;
+
+        // Fetch emergencies where this provider is assigned and status is pending
+        const EmergencyRequest = require("../models/EmergencyRequest");
+        const emergencies = await EmergencyRequest.find({
+            "assignedProviders.providerId": provider._id,
+            "assignedProviders.status": "pending"
+        })
+        .populate("customerId", "name phone")
+        .sort({ createdAt: -1 })
+        .skip(skip)
+        .limit(limit);
+
+        const totalEmergencies = await EmergencyRequest.countDocuments({
+            "assignedProviders.providerId": provider._id,
+            "assignedProviders.status": "pending"
+        });
+
+        return res.status(200).json({
+            success: true,
+            totalEmergencies,
+            page,
+            limit,
+            data: emergencies
+        });
+
+    } catch (err) {
+        console.error("Get Assigned Emergencies Error:", err);
+        res.status(500).json({
+            success: false,
+            message: "Internal Server Error",
+            error: err.message
+        });
+    }
+};
+
+// NEW: Accept emergency request
+exports.acceptEmergency = async (req, res) => {
+    try {
+        const { emergencyId } = req.body;
+        const userId = req.user._id;
+
+        if (!emergencyId) {
+            return res.status(400).json({
+                success: false,
+                message: "Emergency ID is required"
+            });
+        }
+
+        if (req.user.role !== "provider") {
+            return res.status(403).json({
+                success: false,
+                message: "Access Denied. Only Providers can access this API"
+            });
+        }
+
+        const provider = await Provider.findOne({ userId });
+        if (!provider) {
+            return res.status(404).json({
+                success: false,
+                message: "Provider profile not found"
+            });
+        }
+
+        const EmergencyRequest = require("../models/EmergencyRequest");
+        const emergency = await EmergencyRequest.findById(emergencyId);
+
+        if (!emergency) {
+            return res.status(404).json({
+                success: false,
+                message: "Emergency not found"
+            });
+        }
+
+        // Check if provider is assigned to this emergency
+        const isAssigned = emergency.assignedProviders.some(
+            p => String(p.providerId) === String(provider._id)
+        );
+
+        if (!isAssigned) {
+            return res.status(403).json({
+                success: false,
+                message: "You are not assigned to this emergency"
+            });
+        }
+
+        // Update emergency status
+        emergency.status = "accepted";
+        emergency.assignedProviderId = provider._id;
+        emergency.acceptedAt = new Date();
+
+        // Update provider status in assignedProviders array
+        emergency.assignedProviders.forEach(p => {
+            if (String(p.providerId) === String(provider._id)) {
+                p.status = "accepted";
+                p.respondedAt = new Date();
+            } else {
+                p.status = "rejected";
+            }
+        });
+
+        await emergency.save();
+
+        // Emit real-time events
+        const { emitEmergencyAccepted } = require("../socket/socketSetup");
+        const io = require("../app").get("io");
+        if (io) {
+            emitEmergencyAccepted(io, emergency);
+        }
+
+        return res.status(200).json({
+            success: true,
+            message: "Emergency accepted successfully",
+            data: emergency
+        });
+
+    } catch (err) {
+        console.error("Accept Emergency Error:", err);
+        res.status(500).json({
+            success: false,
+            message: "Internal Server Error",
+            error: err.message
+        });
+    }
+};
+
+// NEW: Reject emergency request
+exports.rejectEmergency = async (req, res) => {
+    try {
+        const { emergencyId } = req.body;
+        const userId = req.user._id;
+
+        if (!emergencyId) {
+            return res.status(400).json({
+                success: false,
+                message: "Emergency ID is required"
+            });
+        }
+
+        if (req.user.role !== "provider") {
+            return res.status(403).json({
+                success: false,
+                message: "Access Denied. Only Providers can access this API"
+            });
+        }
+
+        const provider = await Provider.findOne({ userId });
+        if (!provider) {
+            return res.status(404).json({
+                success: false,
+                message: "Provider profile not found"
+            });
+        }
+
+        const EmergencyRequest = require("../models/EmergencyRequest");
+        const emergency = await EmergencyRequest.findById(emergencyId);
+
+        if (!emergency) {
+            return res.status(404).json({
+                success: false,
+                message: "Emergency not found"
+            });
+        }
+
+        // Check if provider is assigned to this emergency
+        const isAssigned = emergency.assignedProviders.some(
+            p => String(p.providerId) === String(provider._id)
+        );
+
+        if (!isAssigned) {
+            return res.status(403).json({
+                success: false,
+                message: "You are not assigned to this emergency"
+            });
+        }
+
+        // Update provider status in assignedProviders array
+        emergency.assignedProviders.forEach(p => {
+            if (String(p.providerId) === String(provider._id)) {
+                p.status = "rejected";
+                p.respondedAt = new Date();
+            }
+        });
+
+        await emergency.save();
+
+        // Emit real-time event
+        const { emitEmergencyRejected } = require("../socket/socketSetup");
+        const io = require("../app").get("io");
+        if (io) {
+            emitEmergencyRejected(io, emergencyId, provider._id);
+        }
+
+        return res.status(200).json({
+            success: true,
+            message: "Emergency rejected successfully",
+            data: emergency
+        });
+
+    } catch (err) {
+        console.error("Reject Emergency Error:", err);
+        res.status(500).json({
+            success: false,
+            message: "Internal Server Error",
+            error: err.message
+        });
+    }
+}

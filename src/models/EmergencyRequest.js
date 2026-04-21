@@ -40,7 +40,24 @@ const EmergencyRequestSchema = new mongoose.Schema(
         completedAt: {
             type: Date,
             default: null
-        }
+        },
+        assignedProviders: [
+            {
+                providerId: {
+                    type: mongoose.Schema.Types.ObjectId,
+                    ref: "Provider"
+                },
+                status: {
+                    type: String,
+                    enum: ["pending", "accepted", "rejected"],
+                    default: "pending"
+                },
+                respondedAt: {
+                    type: Date,
+                    default: null
+                }
+            }
+        ]
     },
     { timestamps: true }
 );

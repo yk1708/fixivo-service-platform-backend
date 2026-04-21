@@ -1,6 +1,7 @@
 const EmergencyRequest = require("../models/EmergencyRequest");
 const Provider = require("../models/Provider");
 const Notification = require("../models/Notification");
+const { emitEmergencyToProviders } = require("../socket/socketSetup");
 
 exports.emergencyService = async (req,res) => {
     try{
@@ -49,6 +50,16 @@ exports.emergencyService = async (req,res) => {
             isAvailable: true
         }).limit(5);
 
+        // Assign providers to emergency
+        if(providers.length > 0) {
+            newEmergency.assignedProviders = providers.map(provider => ({
+                providerId: provider._id,
+                status: "pending"
+            }));
+        }
+
+        await newEmergency.save();
+
         if(providers.length === 0){
             return res.status(200).json({
                 success: true,
@@ -58,16 +69,22 @@ exports.emergencyService = async (req,res) => {
             })
         }
 
+        // Send notifications with emergency ID
         providers.forEach(provider => {
             const notification = new Notification({
                 userId: provider.userId,
                 type: "emergency",
-                message: `New emergency request for ${serviceType} near you.`
+                message: `New emergency request for ${serviceType} near you.`,
+                relatedId: newEmergency._id
             });
             notification.save();
         });
 
-        await newEmergency.save();
+        // Emit real-time event to providers
+        const io = require("../app").get("io");
+        if(io) {
+            emitEmergencyToProviders(io, providers, newEmergency);
+        }
 
         res.status(201).json({ 
              success: true,
