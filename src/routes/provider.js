@@ -10,6 +10,7 @@ router.get("/completed-requests", authMiddleware.verifyToken, providerController
 
 // NEW: Emergency request routes
 router.get("/emergencies/assigned", authMiddleware.verifyToken, providerController.getAssignedEmergencies);
+router.get("/emergencies/history", authMiddleware.verifyToken, providerController.getEmergencyHistory);
 router.post("/emergencies/accept", authMiddleware.verifyToken, providerController.acceptEmergency);
 router.post("/emergencies/reject", authMiddleware.verifyToken, providerController.rejectEmergency);
 

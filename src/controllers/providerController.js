@@ -182,7 +182,7 @@ exports.completeProfile = async (req,res) => {
 
 exports.completeWork = async (req, res) => {
     try {
-        const { requestId } = req.params;
+        const { requestId, type } = req.params;
 
         const request = await ServiceRequest.findById(requestId);
 
@@ -229,7 +229,7 @@ exports.completeWork = async (req, res) => {
 
 exports.verifyOtpAndComplete = async (req, res) => {
     try {
-        const { requestId } = req.params;
+        const { requestId,type} = req.params;
         const { otp } = req.body;
 
         // Validate input
@@ -608,4 +608,101 @@ exports.rejectEmergency = async (req, res) => {
             error: err.message
         });
     }
-}
+};
+
+// NEW: Get emergency request history for provider
+exports.getEmergencyHistory = async (req, res) => {
+    try {
+        const userId = req.user._id;
+
+        if (!userId) {
+            return res.status(401).json({
+                success: false,
+                message: "User ID not found in token"
+            });
+        }
+
+        if (req.user.role !== "provider") {
+            return res.status(403).json({
+                success: false,
+                message: "Access Denied. Only Providers can access this API"
+            });
+        }
+
+        const provider = await Provider.findOne({ userId });
+        if (!provider) {
+            return res.status(404).json({
+                success: false,
+                message: "Provider profile not found"
+            });
+        }
+
+        const page = parseInt(req.query.page) || 1;
+        const limit = parseInt(req.query.limit) || 10;
+        const skip = (page - 1) * limit;
+        const filterStatus = req.query.status; // Optional filter: pending, accepted, rejected, completed
+
+        const EmergencyRequest = require("../models/EmergencyRequest");
+
+        // Build filter
+        let filter = {
+            "assignedProviders.providerId": provider._id
+        };
+
+        // Add status filter if provided
+        if (filterStatus) {
+            filter.status = filterStatus;
+        }
+
+        // Fetch emergency history with pagination
+        const emergencyHistory = await EmergencyRequest.find(filter)
+            .populate("customerId", "name phone email")
+            .populate("assignedProviderId", "name serviceType")
+            .sort({ createdAt: -1 })
+            .skip(skip)
+            .limit(limit)
+            .lean();
+
+        // Get total count
+        const totalEmergencies = await EmergencyRequest.countDocuments(filter);
+
+        // Format response with provider's specific status
+        const formattedHistory = emergencyHistory.map(emergency => {
+            const providerData = emergency.assignedProviders.find(
+                p => String(p.providerId) === String(provider._id)
+            );
+
+            return {
+                _id: emergency._id,
+                customerId: emergency.customerId,
+                serviceType: emergency.serviceType,
+                description: emergency.description,
+                location: emergency.location,
+                status: emergency.status,
+                assignedProviderId: emergency.assignedProviderId,
+                providerStatus: providerData?.status || "unknown",
+                respondedAt: providerData?.respondedAt || null,
+                acceptedAt: emergency.acceptedAt,
+                completedAt: emergency.completedAt,
+                createdAt: emergency.createdAt,
+                updatedAt: emergency.updatedAt
+            };
+        });
+
+        return res.status(200).json({
+            success: true,
+            totalEmergencies,
+            page,
+            limit,
+            data: formattedHistory
+        });
+
+    } catch (err) {
+        console.error("Get Emergency History Error:", err);
+        res.status(500).json({
+            success: false,
+            message: "Internal Server Error",
+            error: err.message
+        });
+    }
+};
