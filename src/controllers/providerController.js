@@ -299,13 +299,24 @@ exports.verifyOtpAndComplete = async (req, res) => {
 
         await request.save();
 
+        // Populate to get customer details for the response
+        await request.populate("providerId", "name serviceType");
+        await request.populate("customerId", "name email");
+
         return res.status(200).json({
             success: true,
             message: "Work completed successfully",
+            showRatingModal: true,
             request: {
                 id: request._id,
                 status: request.status,
-                completedAt: request.completedAt
+                completedAt: request.completedAt,
+                serviceType: request.serviceType,
+                details: request.details,
+                providerId: request.providerId._id,
+                providerName: request.providerId.name,
+                providerServiceType: request.providerId.serviceType,
+                customerId: request.customerId._id
             }
         });
 

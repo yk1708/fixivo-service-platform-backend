@@ -41,6 +41,10 @@ const serviceRequestSchema = new mongoose.Schema(
         completedAt:{
             type:Date,
             default:null
+        },
+        hasBeenReviewed: {
+            type: Boolean,
+            default: false
         }
     }, { timestamps: true }
 )
