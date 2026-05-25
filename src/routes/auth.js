@@ -4,7 +4,8 @@ const jwt = require("jsonwebtoken");
 const User = require("../models/User");
 const {
     registerCustomer, 
-    loginCustomer
+    loginCustomer,
+    googleLogin
 } = require("../controllers/authController")
 const {verifyToken} = require("../middleware/authMiddleware");
 const {generateAccessToken} = require("../utils/generateToken");
@@ -20,6 +21,8 @@ router.post("/customer/login", loginCustomer);
 
 router.post("/provider/register", registerProvider);
 router.post("/provider/login", loginProvider);
+
+router.post("/google", googleLogin);
 
 
 

@@ -8,12 +8,15 @@ const providerRoutes = require("./routes/provider")
 const reviewRoutes = require("./routes/review");
 const errorMiddleware = require("./middleware/errorMiddleware");
 const notificationRoutes = require("./routes/notification");
-//Middleware
+//Middleware    
 app.use(express.json())
 app.use(cors({
-    origin: "*",
-    credentials: true
-}))
+  origin: [
+    "http://localhost:5173",
+    "https://fixivo-service-platform-frontend.vercel.app"
+  ],
+  credentials: true
+}));
 // Routes
 app.get("/", (req, res) => {
     res.send("Its Working")
