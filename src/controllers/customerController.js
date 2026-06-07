@@ -1,19 +1,33 @@
 const Provider = require('../models/Provider');
 const EmergencyRequest = require('../models/EmergencyRequest');
 const Review = require('../models/Review');
+const client = require('../redis/redis');
 
 exports.getVerifiedProviders = async (req, res) => {
     try {
+        const cachedKey = "verified-providers:all"
+        const cachedUsers = await client.get(cachedKey);
+        if(cachedUsers){
+            console.log("Data Came from REDIS",cachedUsers);
+            return res.json(JSON.parse(cachedUsers));
+        }
         const providers = await Provider.find({ isVerified: true })
             .populate({
                 path: "userId",
                 select: "email name role"
             })
             .select("userId name email phone serviceType experience rating averageRating reviewCount location availability isVerified");
+
         const filteredProviders = providers.filter(p => p.userId);
+        
+        // Cache the correctly filtered data
+        await client.set(cachedKey, JSON.stringify(filteredProviders), { EX: 3600 });
+
+        console.log("Data Came from MongoDB");
         res.status(200).json(filteredProviders);
     } catch (err) {
-        res.status(500).json({ message: "Internal Server Error" });
+        res.status(500).json({ message: "Internal Server Error", err });
+        console.log(err);
     }
 };
 
@@ -117,4 +131,3 @@ exports.getEmergencyStatus = async (req, res) => {
         res.status(500).json({ message: "Internal Server Error" });
     }
 };
-

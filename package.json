@@ -28,7 +28,7 @@
     "google-auth-library": "^10.6.2",
     "jsonwebtoken": "^9.0.3",
     "mongoose": "^9.3.0",
-    "redis": "^5.11.0",
+    "redis": "^5.12.1",
     "salt": "^0.5.5",
     "socket.io": "^4.8.3"
   },

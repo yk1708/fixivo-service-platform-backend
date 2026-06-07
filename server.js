@@ -1,6 +1,7 @@
 require("dotenv").config();
 const app = require("./src/app");
 const connectDB = require("./src/config/db");
+require("./src/redis/redis"); // Initialize Redis connection
 const http = require("http");
 const socketIO = require("socket.io");
 

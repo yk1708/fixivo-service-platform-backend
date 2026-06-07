@@ -8,7 +8,7 @@ const {
 const ServiceRequest = require("../models/ServiceRequest");
 const generateOTP = require("../utils/generateOTP");
 const crypto = require("crypto");
-
+const client = require('../redis/redis')
 
 exports.registerProvider = async (req, res) => {
     console.log("Register Provider API called");
@@ -146,7 +146,7 @@ exports.completeProfile = async (req,res) => {
 
     const userId = req.user._id;
 
-    const provider = await Provider.findOne({ userId     }).populate('userId', 'name email');
+    const provider = await Provider.findOne({ userId }).populate('userId', 'name email');
     if(!provider){
         return res.status(404).json({ message: "Provider Not Found"});
     }
@@ -167,6 +167,8 @@ exports.completeProfile = async (req,res) => {
     }
     
     await provider.save();
+    client.set(`user: ${userId}`,JSON.stringify(provider), { EX: 3600});
+    client.del("verified-providers:all");
 
     res.json({
         message: "Profile Updated Successfully",
