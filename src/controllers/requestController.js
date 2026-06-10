@@ -52,6 +52,12 @@ exports.sendRequestToProvider = async (req, res) => {
     await newRequest.save();
     await newRequest.populate("providerId customerId");
 
+    // Emit Socket.IO event to provider
+    const io = req.app.get("io");
+    if (io) {
+      io.to(`provider_${providerId}`).emit("newRequest", newRequest);
+    }
+
     res.status(201).json({
       message: "Request sent to provider successfully",
       request: newRequest,
@@ -163,6 +169,18 @@ exports.acceptRequest = async (req, res) => {
     request.status = "accepted";
     request.acceptedAt = new Date();
     await request.save();
+
+    // Emit Socket.IO event to customer
+    const io = req.app.get("io");
+    if (io) {
+      io.to(`customer_${request.customerId}`).emit("requestStatusUpdated", {
+        requestId: request._id,
+        status: request.status,
+        acceptedAt: request.acceptedAt,
+        request: request
+      });
+    }
+
     res.json({ message: "Request accepted successfully", request });
   } catch (err) {
     res
@@ -190,6 +208,17 @@ exports.rejectRequest = async (req, res) => {
     }
     request.status = "rejected";
     await request.save();
+
+    // Emit Socket.IO event to customer
+    const io = req.app.get("io");
+    if (io) {
+      io.to(`customer_${request.customerId}`).emit("requestStatusUpdated", {
+        requestId: request._id,
+        status: request.status,
+        request: request
+      });
+    }
+
     res.json({ message: "Request rejected successfully", request });
   } catch (err) {
     res

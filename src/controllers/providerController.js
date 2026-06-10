@@ -305,6 +305,17 @@ exports.verifyOtpAndComplete = async (req, res) => {
         await request.populate("providerId", "name serviceType");
         await request.populate("customerId", "name email");
 
+        // Emit Socket.IO event to customer
+        const io = req.app.get("io");
+        if (io) {
+            io.to(`customer_${request.customerId._id}`).emit("requestStatusUpdated", {
+                requestId: request._id,
+                status: request.status,
+                completedAt: request.completedAt,
+                request: request
+            });
+        }
+
         return res.status(200).json({
             success: true,
             message: "Work completed successfully",

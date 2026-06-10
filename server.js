@@ -22,7 +22,7 @@ app.set("io", io);
 
 // Socket.IO connection handler
 io.on("connection", (socket) => {
-    console.log(`Provider connected: ${socket.id}`);
+    console.log(`User connected: ${socket.id}`);
 
     // Store provider socket mapping (providerId -> socketId)
     socket.on("providerOnline", (providerId) => {
@@ -31,8 +31,15 @@ io.on("connection", (socket) => {
         console.log(`Provider ${providerId} joined room: provider_${providerId}`);
     });
 
+    // Store customer socket mapping (customerId -> socketId)
+    socket.on("customerOnline", (customerId) => {
+        socket.customerId = customerId;
+        socket.join(`customer_${customerId}`);
+        console.log(`Customer ${customerId} joined room: customer_${customerId}`);
+    });
+
     socket.on("disconnect", () => {
-        console.log(`Provider disconnected: ${socket.id}`);
+        console.log(`User disconnected: ${socket.id}`);
     });
 });
 
