@@ -6,9 +6,10 @@ const {
   generateRefreshToken
 } = require("../utils/generateToken");
 const ServiceRequest = require("../models/ServiceRequest");
+const EmergencyRequest = require("../models/EmergencyRequest");
 const generateOTP = require("../utils/generateOTP");
-const crypto = require("crypto");
 const client = require('../redis/redis')
+
 
 exports.registerProvider = async (req, res) => {
     console.log("Register Provider API called");
@@ -730,3 +731,270 @@ exports.getEmergencyHistory = async (req, res) => {
         });
     }
 };
+
+exports.providerDataAnalysis = async(req,res) => {
+    try{
+        const userId = req.user._id;
+
+        if(req.user.role !== "provider"){
+            return res.status(403).json({
+                success: false,
+                message: "Access Denied"
+            });
+        }
+
+        const provider = await Provider.findOne({ userId });
+
+        if(!provider){
+            return res.status(404).json({
+                success: false,
+                message: "Provider Not Found"
+            });
+        }
+        // const totalRequestedService = await ServiceRequest.countDocuments({ providerId: provider._id });
+        // const totalAcceptedService = await ServiceRequest.countDocuments({ providerId: provider._id, status: "accepted" });
+        // const totalRejectedService = await ServiceRequest.countDocuments({ providerId: provider._id, status: "rejected" });
+        // const totalCompletedService = await ServiceRequest.countDocuments({ providerId: provider._id, status: "completed" });
+        // const totalPendingService = await ServiceRequest.countDocuments({ providerId: provider._id, status: "pending" }); 
+
+        // const [
+        //     totalRequestedService,
+        //     totalAcceptedService,
+        //     totalRejectedService,
+        //     totalCompletedService,
+        //     totalPendingService
+        // ] = await Promise.all([
+        //     ServiceRequest.countDocuments({ providerId: provider._id }),
+        //     ServiceRequest.countDocuments({ providerId: provider._id, status: "accepted" }),
+        //     ServiceRequest.countDocuments({ providerId: provider._id, status: "rejected" }),
+        //     ServiceRequest.countDocuments({ providerId: provider._id, status: "completed" }),
+        //     ServiceRequest.countDocuments({ providerId: provider._id, status: "pending" })
+        // ]);     
+
+        const emergencyPipeline = [
+            {
+                $match: {
+                    "assignedProviders.providerId": provider._id
+                }
+            },
+            {
+                $project: {
+                    providerData: {
+                        $filter: {
+                            input: "$assignedProviders",
+                            as: "provider",
+                            cond: {
+                                $eq: ["$$provider.providerId", provider._id]
+                            }
+                        }
+                    },
+                    status: 1,
+                    assignedProviderId: 1
+                }
+            },
+            {
+                $project: {
+                    providerStatus: {
+                        $arrayElemAt: [
+                            "$providerData.status",
+                            0
+                        ]
+                    },
+                    status: 1,
+                    isAssignedProvider: {
+                        $eq: [
+                            "$assignedProviderId",
+                            provider._id
+                        ]
+                    }
+                }
+            },
+            {
+                $group: {
+                    _id: null,
+                    totalRequestedEmergency: {
+                        $sum: 1
+                    },
+                    totalAcceptedEmergency: {
+                        $sum: {
+                            $cond: [
+                                {
+                                    $and: [
+                                        {
+                                            $eq: [
+                                                "$status",
+                                                "accepted"
+                                            ]
+                                        },
+                                        "$isAssignedProvider"
+                                    ]
+                                },
+                                1,
+                                0
+                            ]
+                        }
+                    },
+                    totalCompletedEmergency: {
+                        $sum: {
+                            $cond: [
+                                {
+                                    $and: [
+                                        {
+                                            $eq: [
+                                                "$status",
+                                                "completed"
+                                            ]
+                                        },
+                                        "$isAssignedProvider"
+                                    ]
+                                },
+                                1,
+                                0
+                            ]
+                        }
+                    },
+                    totalRejectedEmergency: {
+                        $sum: {
+                            $cond: [
+                                {
+                                    $eq: [
+                                        "$providerStatus",
+                                        "rejected"
+                                    ]
+                                },
+                                1,
+                                0
+                            ]
+                        }
+                    },
+                    totalPendingEmergency: {
+                        $sum: {
+                            $cond: [
+                                {
+                                    $eq: [
+                                        "$providerStatus",
+                                        "pending"
+                                    ]
+                                },
+                                1,
+                                0
+                            ]
+                        }
+                    }
+                }
+            }
+        ];
+
+        const [serviceStats, emergencyStats] = await Promise.all([
+            ServiceRequest.aggregate([
+                {
+                    $match: {
+                        providerId: provider._id,
+                    }
+                },
+                {
+                    $group: {
+                        _id: null,
+                        totalRequestedService: {
+                            $sum: 1
+                        },
+                        totalAcceptedService: {
+                            $sum: {
+                                $cond: [
+                                    { $eq: ["$status", "accepted"] },
+                                    1,
+                                    0
+                                ]
+                            }
+                        },
+                        totalRejectedService: {
+                            $sum: {
+                                $cond: [
+                                    { $eq: ["$status", "rejected"] },
+                                    1,
+                                    0
+                                ]
+                            }
+                        },
+                        totalCompletedService: {
+                            $sum: {
+                                $cond: [
+                                    { $eq: ["$status", "completed"] },
+                                    1,
+                                    0
+                                ]
+                            }
+                        },
+                        totalPendingService: {
+                            $sum: {
+                                $cond: [
+                                    { $eq: ["$status", "pending"] },
+                                    1,
+                                    0
+                                ]
+                            }
+                        }
+                    }
+                }
+            ]),
+            EmergencyRequest.aggregate(emergencyPipeline)
+        ]);
+        const serviceData = serviceStats[0] || {
+            totalRequestedService: 0,
+            totalAcceptedService: 0,
+            totalRejectedService: 0,
+            totalCompletedService: 0,
+            totalPendingService: 0
+        };
+
+        const emergencyData = emergencyStats[0] || {
+            totalRequestedEmergency: 0,
+            totalAcceptedEmergency: 0,
+            totalRejectedEmergency: 0,
+            totalCompletedEmergency: 0,
+            totalPendingEmergency: 0
+        };
+
+        const {
+            totalRequestedService,
+            totalAcceptedService,
+            totalRejectedService,
+            totalCompletedService,
+            totalPendingService
+        } = serviceData;
+
+        const {
+            totalRequestedEmergency,
+            totalAcceptedEmergency,
+            totalRejectedEmergency,
+            totalCompletedEmergency,
+            totalPendingEmergency
+        } = emergencyData;
+        
+        return res.status(200).json({
+            success: true,
+            providerData: provider,
+            serviceRequestsStats: {
+                totalRequestedService,
+                totalAcceptedService,
+                totalRejectedService,
+                totalCompletedService,
+                totalPendingService,
+            },
+            emergencyRequestsStats: {
+                totalRequestedEmergency,
+                totalAcceptedEmergency,
+                totalRejectedEmergency,
+                totalCompletedEmergency,
+                totalPendingEmergency
+            }
+        }); 
+
+    }catch(err){
+        res.status(500).json({
+            success: false,
+            message: "Internal Server Error",
+            err: err.message,
+        });
+    }   
+}

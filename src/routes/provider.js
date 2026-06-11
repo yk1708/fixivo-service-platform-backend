@@ -14,4 +14,5 @@ router.get("/emergencies/history", authMiddleware.verifyToken, providerControlle
 router.post("/emergencies/accept", authMiddleware.verifyToken, providerController.acceptEmergency);
 router.post("/emergencies/reject", authMiddleware.verifyToken, providerController.rejectEmergency);
 
+router.get("/data-analysis", authMiddleware.verifyToken, providerController.providerDataAnalysis);  
 module.exports = router;
