@@ -1,7 +1,12 @@
+const dns = require("dns");
+try {
+    dns.setServers(["8.8.8.8", "8.8.4.4"]);
+} catch (e) {}
+
 require("dotenv").config();
 const app = require("./src/app");
 const connectDB = require("./src/config/db");
-require("./src/redis/redis"); // Initialize Redis connection
+// require("./src/redis/redis"); // Initialize Redis connection
 const http = require("http");
 const socketIO = require("socket.io");
 

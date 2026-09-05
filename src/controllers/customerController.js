@@ -1,16 +1,16 @@
 const Provider = require('../models/Provider');
 const EmergencyRequest = require('../models/EmergencyRequest');
 const Review = require('../models/Review');
-const client = require('../redis/redis');
+// const client = require('../redis/redis');
 
 exports.getVerifiedProviders = async (req, res) => {
     try {
-        const cachedKey = "verified-providers:all"
-        const cachedUsers = await client.get(cachedKey);
-        if(cachedUsers){
-            console.log("Data Came from REDIS",cachedUsers);
-            return res.json(JSON.parse(cachedUsers));
-        }
+        // const cachedKey = "verified-providers:all"
+        // const cachedUsers = await client.get(cachedKey);
+        // if(cachedUsers){
+        //     console.log("Data Came from REDIS",cachedUsers);
+        //     return res.json(JSON.parse(cachedUsers));
+        // }
         const providers = await Provider.find({ isVerified: true })
             .populate({
                 path: "userId",
@@ -21,7 +21,7 @@ exports.getVerifiedProviders = async (req, res) => {
         const filteredProviders = providers.filter(p => p.userId);
         
         // Cache the correctly filtered data
-        await client.set(cachedKey, JSON.stringify(filteredProviders), { EX: 3600 });
+        // await client.set(cachedKey, JSON.stringify(filteredProviders), { EX: 3600 });
 
         console.log("Data Came from MongoDB");
         res.status(200).json(filteredProviders);

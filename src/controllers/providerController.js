@@ -8,7 +8,7 @@ const {
 const ServiceRequest = require("../models/ServiceRequest");
 const EmergencyRequest = require("../models/EmergencyRequest");
 const generateOTP = require("../utils/generateOTP");
-const client = require('../redis/redis')
+// const client = require('../redis/redis')
 
 
 exports.registerProvider = async (req, res) => {
@@ -168,8 +168,8 @@ exports.completeProfile = async (req,res) => {
     }
     
     await provider.save();
-    client.set(`user: ${userId}`,JSON.stringify(provider), { EX: 3600});
-    client.del("verified-providers:all");
+    // client.set(`user: ${userId}`,JSON.stringify(provider), { EX: 3600});
+    // client.del("verified-providers:all");
 
     res.json({
         message: "Profile Updated Successfully",
