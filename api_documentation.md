@@ -93,7 +93,8 @@ Most routes expect a Bearer Token in the headers:
 - **Body (Raw JSON):**
 ```json
 {
-    "experience": "5 years",
+    "serviceType": "Plumber",
+    "experience": 5,
     "availability": "Mon-Fri, 9AM-5PM",
     "latitude": 12.9716,
     "longitude": 77.5946
@@ -120,6 +121,42 @@ Most routes expect a Bearer Token in the headers:
 - **URL:** `/api/provider/completed-requests?page=1&limit=10`
 - **Method:** `GET`
 - **Auth:** Required (Bearer Token)
+
+### 5. Get Provider Details / Profile
+- **URL:** `/api/provider/details` (or `/api/provider/details/:providerId` / `/api/provider/profile`)
+- **Method:** `GET`
+- **Auth:** Required (Bearer Token) for `/details`, optional for `/details/:providerId`
+- **Response Example:**
+```json
+{
+    "success": true,
+    "message": "Provider details retrieved successfully",
+    "provider": {
+        "_id": "660c1...",
+        "id": "660c1...",
+        "userId": "660c0...",
+        "name": "John Doe",
+        "email": "john@example.com",
+        "phone": "9876543210",
+        "serviceType": "Plumber",
+        "experience": 5,
+        "availability": "Mon-Fri, 9AM-5PM",
+        "location": {
+            "type": "Point",
+            "coordinates": [77.5946, 12.9716]
+        },
+        "latitude": 12.9716,
+        "longitude": 77.5946,
+        "isVerified": true,
+        "isAvailable": true,
+        "rating": 4.5,
+        "averageRating": 4.5,
+        "reviewCount": 12,
+        "createdAt": "2026-04-01T10:00:00.000Z",
+        "updatedAt": "2026-04-02T12:00:00.000Z"
+    }
+}
+```
 
 ---
 

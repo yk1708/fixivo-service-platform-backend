@@ -21,7 +21,10 @@ const serviceRequestSchema = new mongoose.Schema(
             type:String,
             required:true
         },
-        scheduledTime: Date,
+        scheduledTime: {
+            type: mongoose.Schema.Types.Mixed,
+            default: null
+        },
         status:{
             type:String,
             enum:["pending","accepted","rejected","completed"],

@@ -5,6 +5,7 @@ const {
   generateAccessToken,
   generateRefreshToken
 } = require("../utils/generateToken");
+const Review = require("../models/Review");
 const ServiceRequest = require("../models/ServiceRequest");
 const EmergencyRequest = require("../models/EmergencyRequest");
 const generateOTP = require("../utils/generateOTP");
@@ -17,9 +18,9 @@ exports.registerProvider = async (req, res) => {
         const { name, email, password, phone, serviceType } = req.body;
 
         // Validation
-        if (!name || !email || !password || !serviceType) {
+        if (!name || !email || !password) {
             return res.status(400).json({
-                message: "Name, Email, Password, and Service Type are required"
+                message: "Name, Email, and Password are required"
             });
         }
 
@@ -52,8 +53,7 @@ exports.registerProvider = async (req, res) => {
             name,
             email: normalizedEmail,
             phone: phone || "",
-            serviceType,
-            
+            serviceType: serviceType,
         });
 
         res.status(201).json({
@@ -143,7 +143,7 @@ exports.loginProvider = async (req, res) => {
 
 exports.completeProfile = async (req,res) => {
     try{
-    const { experience, availability,latitude, longitude } = req.body;
+    const { serviceType, experience, availability, latitude, longitude } = req.body;
 
     const userId = req.user._id;
 
@@ -153,7 +153,8 @@ exports.completeProfile = async (req,res) => {
     }
 
     // Update provider profile
-    if(req.body.experience) provider.experience = experience;
+    if(req.body.serviceType) provider.serviceType = serviceType;
+    if(req.body.experience !== undefined) provider.experience = experience;
     if(req.body.availability) provider.availability = availability;
     if (latitude && longitude) {
       provider.location = {
@@ -162,8 +163,8 @@ exports.completeProfile = async (req,res) => {
       };
     }
     
-    // Verification condition - verified when experience and availability are provided
-    if(provider.experience && provider.availability && provider.location?.coordinates?.length === 2){
+    // Verification condition - verified when serviceType, experience, availability, and location are provided
+    if(provider.serviceType && provider.experience && provider.availability && provider.location?.coordinates?.length === 2){
         provider.isVerified = true;
     }
     
@@ -997,4 +998,82 @@ exports.providerDataAnalysis = async(req,res) => {
             err: err.message,
         });
     }   
-}
+};
+
+// Get provider details (shows all filled information: contact, service, experience, availability, location, ratings, etc.)
+exports.getProviderDetails = async (req, res) => {
+    try {
+        const { providerId } = req.params;
+        const queryProviderId = req.query.providerId || req.query.id;
+        const targetId = providerId || queryProviderId;
+
+        let provider = null;
+
+        // 1. If providerId or query id is provided, search by Provider _id or User _id
+        if (targetId) {
+            const mongoose = require("mongoose");
+            if (mongoose.Types.ObjectId.isValid(targetId)) {
+                provider = await Provider.findById(targetId).populate("userId", "name email role createdAt");
+                if (!provider) {
+                    provider = await Provider.findOne({ userId: targetId }).populate("userId", "name email role createdAt");
+                }
+            }
+        }
+
+        // 2. If no targetId provided or not found, use authenticated user's ID
+        if (!provider && req.user?._id) {
+            provider = await Provider.findOne({ userId: req.user._id }).populate("userId", "name email role createdAt");
+            if (!provider) {
+                provider = await Provider.findById(req.user._id).populate("userId", "name email role createdAt");
+            }
+        }
+
+        if (!provider) {
+            return res.status(404).json({
+                success: false,
+                message: "Provider profile not found"
+            });
+        }
+
+        // Extract coordinates if present
+        const coordinates = provider.location?.coordinates || [0, 0];
+        const longitude = coordinates[0] !== undefined ? coordinates[0] : null;
+        const latitude = coordinates[1] !== undefined ? coordinates[1] : null;
+
+        return res.status(200).json({
+            success: true,
+            message: "Provider details retrieved successfully",
+            provider: {
+                _id: provider._id,
+                id: provider._id,
+                userId: provider.userId?._id || provider.userId,
+                name: provider.name || provider.userId?.name || "",
+                email: provider.email || provider.userId?.email || "",
+                phone: provider.phone || "",
+                serviceType: provider.serviceType || "",
+                experience: provider.experience !== undefined ? provider.experience : null,
+                availability: provider.availability || "",
+                location: provider.location || { type: "Point", coordinates: [0, 0] },
+                latitude,
+                longitude,
+                isVerified: provider.isVerified || false,
+                isAvailable: provider.isAvailable !== undefined ? provider.isAvailable : true,
+                rating: provider.rating || 0,
+                averageRating: provider.averageRating || 0,
+                reviewCount: provider.reviewCount || 0,
+                createdAt: provider.createdAt,
+                updatedAt: provider.updatedAt
+            }
+        });
+
+    } catch (err) {
+        console.error("Get Provider Details Error:", err);
+        return res.status(500).json({
+            success: false,
+            message: "Internal Server Error",
+            error: err.message
+        });
+    }
+};
+
+exports.getProviderProfile = exports.getProviderDetails;

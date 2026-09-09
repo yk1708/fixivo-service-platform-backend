@@ -14,5 +14,16 @@ router.get("/emergencies/history", authMiddleware.verifyToken, providerControlle
 router.post("/emergencies/accept", authMiddleware.verifyToken, providerController.acceptEmergency);
 router.post("/emergencies/reject", authMiddleware.verifyToken, providerController.rejectEmergency);
 
+// Provider Details & Profile routes
+router.get("/details", authMiddleware.verifyToken, providerController.getProviderDetails);
+router.get("/details/:providerId", (req, res, next) => {
+    if (req.headers.authorization) {
+        return authMiddleware.verifyToken(req, res, next);
+    }
+    next();
+}, providerController.getProviderDetails);
+router.get("/profile", authMiddleware.verifyToken, providerController.getProviderDetails);
+router.get("/me", authMiddleware.verifyToken, providerController.getProviderDetails);
+
 router.get("/data-analysis", authMiddleware.verifyToken, providerController.providerDataAnalysis);  
 module.exports = router;
