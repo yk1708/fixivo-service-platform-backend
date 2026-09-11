@@ -1,6 +1,7 @@
 const Provider = require('../models/Provider');
 const EmergencyRequest = require('../models/EmergencyRequest');
 const Review = require('../models/Review');
+const User = require('../models/User');
 // const client = require('../redis/redis');
 
 exports.getVerifiedProviders = async (req, res) => {
@@ -131,3 +132,118 @@ exports.getEmergencyStatus = async (req, res) => {
         res.status(500).json({ message: "Internal Server Error" });
     }
 };
+
+// Get logged-in customer profile (registration info + profile photo)
+exports.getCustomerProfile = async (req, res) => {
+    try {
+        const userId = req.user._id;
+
+        const user = await User.findById(userId).select("-password -refreshToken");
+        if (!user) {
+            return res.status(404).json({
+                success: false,
+                message: "Customer profile not found"
+            });
+        }
+
+        return res.status(200).json({
+            success: true,
+            message: "Customer profile retrieved successfully",
+            user: {
+                _id: user._id,
+                id: user._id,
+                name: user.name || "",
+                email: user.email || "",
+                phone: user.phone || "",
+                photo: user.photo || user.profilePic || "",
+                profilePic: user.photo || user.profilePic || "",
+                role: user.role,
+                createdAt: user.createdAt,
+                updatedAt: user.updatedAt
+            }
+        });
+    } catch (err) {
+        console.error("Get Customer Profile Error:", err);
+        return res.status(500).json({
+            success: false,
+            message: "Internal Server Error",
+            error: err.message
+        });
+    }
+};
+
+// Update customer profile (e.g. add/update photo, name, phone)
+exports.updateCustomerProfile = async (req, res) => {
+    try {
+        const userId = req.user._id;
+        const { name, phone, photo, profilePic } = req.body;
+
+        const user = await User.findById(userId);
+        if (!user) {
+            return res.status(404).json({
+                success: false,
+                message: "Customer not found"
+            });
+        }
+
+        if (name !== undefined) user.name = name;
+        if (phone !== undefined) user.phone = phone;
+        if (photo !== undefined) {
+            user.photo = photo;
+            user.profilePic = photo;
+        } else if (profilePic !== undefined) {
+            user.photo = profilePic;
+            user.profilePic = profilePic;
+        }
+
+        await user.save();
+
+        return res.status(200).json({
+            success: true,
+            message: "Profile updated successfully",
+            user: {
+                _id: user._id,
+                id: user._id,
+                name: user.name || "",
+                email: user.email || "",
+                phone: user.phone || "",
+                photo: user.photo || user.profilePic || "",
+                profilePic: user.photo || user.profilePic || "",
+                role: user.role,
+                createdAt: user.createdAt,
+                updatedAt: user.updatedAt
+            }
+        });
+    } catch (err) {
+        console.error("Update Customer Profile Error:", err);
+        return res.status(500).json({
+            success: false,
+            message: "Internal Server Error",
+            error: err.message
+        });
+    }
+};
+
+// Customer logout
+exports.logoutCustomer = async (req, res) => {
+    try {
+        const userId = req.user._id;
+        const user = await User.findById(userId);
+        if (user) {
+            user.refreshToken = null;
+            await user.save();
+        }
+        return res.status(200).json({
+            success: true,
+            message: "Customer logged out successfully"
+        });
+    } catch (err) {
+        console.error("Customer Logout Error:", err);
+        return res.status(500).json({
+            success: false,
+            message: "Internal Server Error",
+            error: err.message
+        });
+    }
+};
+

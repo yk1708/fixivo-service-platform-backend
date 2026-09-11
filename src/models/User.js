@@ -14,6 +14,18 @@ const UserSchema = mongoose.Schema({
         enum:["customer", "provider"],
         required:true
     },
+    phone: {
+        type: String,
+        default: ""
+    },
+    photo: {
+        type: String,
+        default: ""
+    },
+    profilePic: {
+        type: String,
+        default: ""
+    },
     refreshToken:String
 },
 {timestamps:true});

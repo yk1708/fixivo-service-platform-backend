@@ -82,6 +82,48 @@ Most routes expect a Bearer Token in the headers:
 - **URL:** `/api/customer/verified-providers`
 - **Method:** `GET`
 
+### 2. Get Customer Profile
+- **URL:** `/api/customer/profile`
+- **Method:** `GET`
+- **Auth:** Required (Bearer Token)
+- **Response Example:**
+```json
+{
+    "success": true,
+    "message": "Customer profile retrieved successfully",
+    "user": {
+        "id": "660c1...",
+        "name": "Jane Doe",
+        "email": "jane@example.com",
+        "phone": "9876543210",
+        "photo": "https://example.com/photo.jpg",
+        "profilePic": "https://example.com/photo.jpg",
+        "role": "customer",
+        "createdAt": "2026-04-01T10:00:00.000Z",
+        "updatedAt": "2026-04-02T12:00:00.000Z"
+    }
+}
+```
+
+### 3. Update Customer Profile (Add Photo / Update Details)
+- **URL:** `/api/customer/profile`
+- **Method:** `PUT`
+- **Auth:** Required (Bearer Token)
+- **Body (Raw JSON):**
+```json
+{
+    "name": "Jane Doe",
+    "phone": "9876543210",
+    "photo": "https://example.com/my-photo.jpg"
+}
+```
+
+### 4. Customer Logout
+- **URL:** `/api/customer/logout` (or `/auth/logout`)
+- **Method:** `POST`
+- **Auth:** Required (Bearer Token)
+
+
 ---
 
 ## 🛠️ Provider APIs
