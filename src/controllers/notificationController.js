@@ -73,12 +73,6 @@ exports.createNotification = async (req, res) => {
     }
 };
 
-
-/*
-Get All Notifications
-GET /notifications?page=1&limit=20
-*/
-
 exports.getNotifications = async (req, res) => {
     try {
         const userId = req.user?._id;
@@ -158,12 +152,6 @@ exports.getNotifications = async (req, res) => {
     }
 };
 
-
-/*
-Get Unread Notification Count
-GET /notifications/unread-count
-*/
-
 exports.getUnreadNotificationCount = async (req, res) => {
     try {
         const userId = req.user?._id;
@@ -197,12 +185,6 @@ exports.getUnreadNotificationCount = async (req, res) => {
         });
     }
 };
-
-
-/*
-Mark One Notification As Read
-PATCH /notifications/:notificationId/read
-*/
 
 exports.markNotificationAsRead = async (req, res) => {
     try {
@@ -271,12 +253,6 @@ exports.markNotificationAsRead = async (req, res) => {
         });
     }
 };
-
-
-/*
-Mark All Notifications As Read
-PATCH /notifications/read-all
-*/
 
 exports.markAllNotificationsAsRead = async (req, res) => {
     try {
