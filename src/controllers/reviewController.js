@@ -1,6 +1,7 @@
 const Review = require("../models/Review");
 const ServiceRequest = require("../models/ServiceRequest");
 const Provider = require("../models/Provider");
+const { createAndSendNotification } = require("../services/notificationService");
 
 // Submit a review for a completed service request
 exports.submitReview = async (req, res) => {
@@ -70,19 +71,35 @@ exports.submitReview = async (req, res) => {
         const totalRating = allReviews.reduce((sum, rev) => sum + rev.rating, 0);
         const averageRating = totalRating / allReviews.length;
 
-        await Provider.findByIdAndUpdate(
+        const updatedProvider = await Provider.findByIdAndUpdate(
             serviceRequest.providerId,
             {
                 averageRating: parseFloat(averageRating.toFixed(2)),
                 reviewCount: allReviews.length
-            }
+            },
+            { new: true }
         );
+
+        if (updatedProvider) {
+            const io = req.app.get("io");
+            await createAndSendNotification({
+                io,
+                userId: updatedProvider.userId,
+                providerId: updatedProvider._id,
+                type: "review",
+                title: "New Review Received",
+                message: `You received a ${rating}★ review for ${serviceRequest.serviceType}.`,
+                relatedId: review._id,
+                requestId: serviceRequest._id
+            });
+        }
 
         res.status(201).json({
             success: true,
             message: "Review submitted successfully",
             review
         });
+
 
     } catch (error) {
         console.error("Error submitting review:", error);

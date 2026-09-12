@@ -2,6 +2,7 @@ const EmergencyRequest = require("../models/EmergencyRequest");
 const Provider = require("../models/Provider");
 const Notification = require("../models/Notification");
 const { emitEmergencyToProviders } = require("../socket/socketSetup");
+const { createAndSendNotification } = require("./notificationService");
 
 exports.emergencyService = async (req,res) => {
     try{
@@ -74,24 +75,30 @@ exports.emergencyService = async (req,res) => {
             })
         }
 
-        providers.forEach(provider => {
-            const notification = new Notification({
-                userId: provider.userId,
-                type: "emergency",
-                message: `New emergency request for ${serviceType} near you.`,
-                relatedId: newEmergency._id
-            });
-            console.log("Creating notification for provider userId:", provider.userId);
-            return notification.save();
-        });
+        const io = require("../app").get("io");
+
+        await Promise.all(
+            providers.map(provider => {
+                return createAndSendNotification({
+                    io,
+                    userId: provider.userId,
+                    providerId: provider._id,
+                    type: "emergency",
+                    title: "Emergency Service Request",
+                    message: `New emergency request for ${serviceType} near you.`,
+                    relatedId: newEmergency._id,
+                    emergencyRequestId: newEmergency._id
+                });
+            })
+        );
 
         // Emit real-time event to providers
-        const io = require("../app").get("io");
-        if(io) {
+        if (io) {
             emitEmergencyToProviders(io, providers, newEmergency);
         } else {
             console.error("Socket.IO instance not found in app context");
         }
+
 
         res.status(201).json({ 
              success: true,

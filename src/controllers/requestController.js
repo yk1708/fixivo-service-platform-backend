@@ -1,6 +1,7 @@
 const ServiceRequest = require("../models/ServiceRequest");
 const Provider = require("../models/Provider");
 const User = require("../models/User");
+const { createAndSendNotification } = require("../services/notificationService");
 
 exports.sendRequestToProvider = async (req, res) => {
   try {
@@ -52,11 +53,24 @@ exports.sendRequestToProvider = async (req, res) => {
     await newRequest.save();
     await newRequest.populate("providerId customerId");
 
-    // Emit Socket.IO event to provider
     const io = req.app.get("io");
+
+    // Emit Socket.IO event to provider
     if (io) {
       io.to(`provider_${providerId}`).emit("newRequest", newRequest);
     }
+
+    // Create persistent notification and emit socket event for provider
+    await createAndSendNotification({
+      io,
+      userId: provider.userId,
+      providerId: provider._id,
+      type: "request",
+      title: "New Service Request",
+      message: `You have received a new service request for ${requestDetails.serviceType}.`,
+      relatedId: newRequest._id,
+      requestId: newRequest._id
+    });
 
     res.status(201).json({
       message: "Request sent to provider successfully",
@@ -70,6 +84,7 @@ exports.sendRequestToProvider = async (req, res) => {
     });
   }
 };
+
 
 exports.getCustomerRequests = async (req, res) => {
   try {
@@ -181,6 +196,18 @@ exports.acceptRequest = async (req, res) => {
       });
     }
 
+    // Send persistent notification & real-time notification to customer
+    await createAndSendNotification({
+      io,
+      userId: request.customerId,
+      customerId: request.customerId,
+      type: "request",
+      title: "Request Accepted",
+      message: `Your service request for ${request.serviceType} has been accepted by ${provider.name || "the provider"}.`,
+      relatedId: request._id,
+      requestId: request._id
+    });
+
     res.json({ message: "Request accepted successfully", request });
   } catch (err) {
     res
@@ -219,6 +246,18 @@ exports.rejectRequest = async (req, res) => {
       });
     }
 
+    // Send persistent notification & real-time notification to customer
+    await createAndSendNotification({
+      io,
+      userId: request.customerId,
+      customerId: request.customerId,
+      type: "request",
+      title: "Request Rejected",
+      message: `Your service request for ${request.serviceType} was declined.`,
+      relatedId: request._id,
+      requestId: request._id
+    });
+
     res.json({ message: "Request rejected successfully", request });
   } catch (err) {
     res
@@ -226,3 +265,4 @@ exports.rejectRequest = async (req, res) => {
       .json({ message: "Internal Server Error", error: err.message });
   }
 };
+

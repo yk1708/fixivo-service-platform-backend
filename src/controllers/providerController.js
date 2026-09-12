@@ -9,6 +9,7 @@ const Review = require("../models/Review");
 const ServiceRequest = require("../models/ServiceRequest");
 const EmergencyRequest = require("../models/EmergencyRequest");
 const generateOTP = require("../utils/generateOTP");
+const { createAndSendNotification } = require("../services/notificationService");
 // const client = require('../redis/redis')
 
 
@@ -318,6 +319,18 @@ exports.verifyOtpAndComplete = async (req, res) => {
             });
         }
 
+        // Send persistent notification & real-time notification to customer
+        await createAndSendNotification({
+            io,
+            userId: request.customerId._id,
+            customerId: request.customerId._id,
+            type: "request",
+            title: "Work Completed",
+            message: `Your service for ${request.serviceType} has been completed by ${request.providerId.name || "the provider"}. Please leave a review!`,
+            relatedId: request._id,
+            requestId: request._id
+        });
+
         return res.status(200).json({
             success: true,
             message: "Work completed successfully",
@@ -536,6 +549,18 @@ exports.acceptEmergency = async (req, res) => {
         if (io) {
             emitEmergencyAccepted(io, emergency);
         }
+
+        // Send notification to customer
+        await createAndSendNotification({
+            io,
+            userId: emergency.customerId,
+            customerId: emergency.customerId,
+            type: "emergency",
+            title: "Emergency Request Accepted",
+            message: `Provider ${provider.name || ""} has accepted your emergency request for ${emergency.serviceType}.`,
+            relatedId: emergency._id,
+            emergencyRequestId: emergency._id
+        });
 
         return res.status(200).json({
             success: true,

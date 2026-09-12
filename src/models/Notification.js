@@ -5,11 +5,16 @@ const NotificationSchema = new mongoose.Schema(
         userId: {
             type: mongoose.Schema.Types.ObjectId,
             ref: "User",
-            required: true
+            required: true,
+            index: true
+        },
+        title: {
+            type: String,
+            default: "Notification"
         },
         type: {
             type: String,
-            enum: ["emergency", "request", "message", "review"],
+            enum: ["emergency", "request", "message", "review", "system", "general"],
             required: true
         },
         message: {
@@ -20,9 +25,20 @@ const NotificationSchema = new mongoose.Schema(
             type: mongoose.Schema.Types.ObjectId,
             default: null
         },
+        requestId: {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: "ServiceRequest",
+            default: null
+        },
+        emergencyRequestId: {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: "EmergencyRequest",
+            default: null
+        },
         isRead: {
             type: Boolean,
-            default: false
+            default: false,
+            index: true
         },
         readAt: {
             type: Date,
@@ -31,5 +47,7 @@ const NotificationSchema = new mongoose.Schema(
     },
     { timestamps: true }
 );
+
+NotificationSchema.index({ userId: 1, createdAt: -1 });
 
 module.exports = mongoose.model("Notification", NotificationSchema);

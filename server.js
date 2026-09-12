@@ -29,10 +29,18 @@ app.set("io", io);
 io.on("connection", (socket) => {
     console.log(`User connected: ${socket.id}`);
 
+    // Store generic user socket mapping (userId -> socketId)
+    socket.on("userOnline", (userId) => {
+        socket.userId = userId;
+        socket.join(`user_${userId}`);
+        console.log(`User ${userId} joined room: user_${userId}`);
+    });
+
     // Store provider socket mapping (providerId -> socketId)
     socket.on("providerOnline", (providerId) => {
         socket.providerId = providerId;
         socket.join(`provider_${providerId}`);
+        socket.join(`user_${providerId}`);
         console.log(`Provider ${providerId} joined room: provider_${providerId}`);
     });
 
@@ -40,6 +48,7 @@ io.on("connection", (socket) => {
     socket.on("customerOnline", (customerId) => {
         socket.customerId = customerId;
         socket.join(`customer_${customerId}`);
+        socket.join(`user_${customerId}`);
         console.log(`Customer ${customerId} joined room: customer_${customerId}`);
     });
 
