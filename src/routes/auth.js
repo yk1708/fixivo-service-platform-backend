@@ -15,12 +15,17 @@ const {
     loginProvider
 } = require("../controllers/providerController");
 
+const {
+    loginLimiter,
+    registerLimiter
+} = require("../config/requestLimit");
+ 
 
-router.post("/customer/register", registerCustomer);
-router.post("/customer/login", loginCustomer);
+router.post("/customer/register",registerLimiter, registerCustomer);
+router.post("/customer/login",loginLimiter, loginCustomer);
 
-router.post("/provider/register", registerProvider);
-router.post("/provider/login", loginProvider);
+router.post("/provider/register",registerLimiter, registerProvider);
+router.post("/provider/login",loginLimiter, loginProvider);
 
 router.post("/google", googleLogin);
 

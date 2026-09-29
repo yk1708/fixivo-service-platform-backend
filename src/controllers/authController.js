@@ -125,11 +125,18 @@ exports.googleLogin = async (req, res) => {
             });
         }
 
-        const { email, name } = googlePayload;
+        const { sub: googleId, email, name, email_verified } = googlePayload;
+
+        if(!email_verified){
+            return res.status(401).json({
+                message: "Google Email is not verified"
+            })
+        }   
+        
         const normalizedEmail = email.toLowerCase().trim();
 
         // Find existing user by email
-        let user = await User.findOne({ email: normalizedEmail });
+        let user = await User.findOne({ googleId });
 
         if (user) {
             // Check if role matches
@@ -140,15 +147,23 @@ exports.googleLogin = async (req, res) => {
             }
         } else {
             // New user signup via Google!
-            const crypto = require("crypto");
-            const randomPassword = crypto.randomBytes(16).toString("hex");
-            const salt = await bcrypt.genSalt(10);
-            const hashedPassword = await bcrypt.hash(randomPassword, salt);
+            // const crypto = require("crypto");
+            // const randomPassword = crypto.randomBytes(16).toString("hex");
+            // const salt = await bcrypt.genSalt(10);
+            // const hashedPassword = await bcrypt.hash(randomPassword, salt);
+            if(role === "provider"){
+                if(!serviceType){
+                    return res.status(400).json({
+                        message:"Service Type is Required"
+                    })
+                }
+            }
 
             user = await User.create({
                 name,
                 email: normalizedEmail,
-                password: hashedPassword,
+                googleId,
+                // password: hashedPassword,
                 role: role
             });
 

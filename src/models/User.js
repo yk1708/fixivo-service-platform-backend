@@ -8,7 +8,15 @@ const UserSchema = mongoose.Schema({
         lowercase: true,
         trim: true
     },
-    password: String,
+    googleId: {
+        type: String,
+        unique: true,
+        sparse: true
+    },
+    password:{ 
+        type: String,
+        default: null
+    },
     role:{
         type:String,
         enum:["customer", "provider"],
